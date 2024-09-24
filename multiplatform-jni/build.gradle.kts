@@ -15,7 +15,6 @@
  */
 
 import org.jetbrains.kotlin.konan.target.KonanTarget
-import kotlin.io.path.absolutePathString
 import kotlin.io.path.div
 
 plugins {
@@ -94,6 +93,57 @@ kotlin {
                         "-llibjawt.dylib",
                         "-llibjvm.dylib"
                     )
+                }
+            }
+        }
+    }
+}
+
+publishing {
+    System.getenv("CI_API_V4_URL")?.let { apiUrl ->
+        repositories {
+            maven {
+                url = uri(
+                    "${
+                        apiUrl.replace(
+                            "http://",
+                            "https://"
+                        )
+                    }/projects/${System.getenv("CI_PROJECT_ID")}/packages/maven"
+                )
+                name = "GitLab"
+                credentials(HttpHeaderCredentials::class) {
+                    name = "Job-Token"
+                    value = System.getenv("CI_JOB_TOKEN")
+                }
+                authentication {
+                    create("header", HttpHeaderAuthentication::class)
+                }
+            }
+        }
+    }
+    publications.configureEach {
+        if (this is MavenPublication) {
+            pom {
+                name = project.name
+                description =
+                    "Multiplatform bindings for the native JNI API on Linux, Windows and macOS."
+                url = "https://git.karmakrafts.dev/kk/ferrous-project/multiplatform-jni"
+                licenses {
+                    license {
+                        name = "Apache License 2.0"
+                        url = "https://www.apache.org/licenses/LICENSE-2.0"
+                    }
+                }
+                developers {
+                    developer {
+                        id = "kitsunealex"
+                        name = "KitsuneAlex"
+                        url = "https://git.karmakrafts.dev/KitsuneAlex"
+                    }
+                }
+                scm {
+                    url = "https://git.karmakrafts.dev/kk/ferrous-project/multiplatform-jni"
                 }
             }
         }
