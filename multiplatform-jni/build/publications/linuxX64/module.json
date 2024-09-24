@@ -1,0 +1,82 @@
+{
+  "formatVersion": "1.1",
+  "component": {
+    "url": "../../multiplatform-jni/1.0.0.0/multiplatform-jni-1.0.0.0.module",
+    "group": "io.karma.jni",
+    "module": "multiplatform-jni",
+    "version": "1.0.0.0",
+    "attributes": {
+      "org.gradle.status": "release"
+    }
+  },
+  "createdBy": {
+    "gradle": {
+      "version": "8.9"
+    }
+  },
+  "variants": [
+    {
+      "name": "linuxX64ApiElements-published",
+      "attributes": {
+        "artifactType": "org.jetbrains.kotlin.klib",
+        "org.gradle.category": "library",
+        "org.gradle.jvm.environment": "non-jvm",
+        "org.gradle.usage": "kotlin-api",
+        "org.jetbrains.kotlin.native.target": "linux_x64",
+        "org.jetbrains.kotlin.platform.type": "native"
+      },
+      "dependencies": [
+        {
+          "group": "org.jetbrains.kotlin",
+          "module": "kotlin-stdlib",
+          "version": {
+            "requires": "2.0.10"
+          }
+        }
+      ],
+      "files": [
+        {
+          "name": "multiplatform-jni.klib",
+          "url": "multiplatform-jni-linuxx64-1.0.0.0.klib",
+          "size": 3662,
+          "sha512": "b850e5f08999574068dfad114f6086baf72680ffe55001d41544cf50d55f46737eeba1509012fde1dc218185137b0c6e28abeaa75b6d6206068e20015fa8b220",
+          "sha256": "6325e3a5169a4978a45848f77ba3783305df876416ff11a5ac8510bf60b63fdc",
+          "sha1": "80cbc7e46ba4f70c0a789f64a4ae67ebc2413135",
+          "md5": "a747504c86a0d7129ff2b21c5ea3961a"
+        },
+        {
+          "name": "multiplatform-jni-cinterop-jni.klib",
+          "url": "multiplatform-jni-linuxx64-1.0.0.0-cinterop-jni.klib",
+          "size": 16625,
+          "sha512": "44e90dc3f021649d1770e54e78d6fd08742892c5fae7947816f9212af90b91ca93982b22a9620514039cdb57c83e3ed3b221a4579e3e49fbfd92db31be028f52",
+          "sha256": "14b5b7b511fa53ae6814cb80b15e5aa7140fa54d9388962d9c1ccb35fc6db31b",
+          "sha1": "25e6770bce4ae58e1c7dec6495a1e2f417ed401b",
+          "md5": "6929f7ed30a5d547029a0292deddf4f4"
+        }
+      ]
+    },
+    {
+      "name": "linuxX64SourcesElements-published",
+      "attributes": {
+        "org.gradle.category": "documentation",
+        "org.gradle.dependency.bundling": "external",
+        "org.gradle.docstype": "sources",
+        "org.gradle.jvm.environment": "non-jvm",
+        "org.gradle.usage": "kotlin-runtime",
+        "org.jetbrains.kotlin.native.target": "linux_x64",
+        "org.jetbrains.kotlin.platform.type": "native"
+      },
+      "files": [
+        {
+          "name": "multiplatform-jni-linuxx64-1.0.0.0-sources.jar",
+          "url": "multiplatform-jni-linuxx64-1.0.0.0-sources.jar",
+          "size": 871,
+          "sha512": "aa49391a0bfafb9c9807868227f90f16f1dfab7989875850bef047f8970bcbf88d661693e56521b37265241cf56215f28df7b8e2452db439959811cccf4df338",
+          "sha256": "2dc43511a01e14e2e05c8a7b7d5471f409df7bc0744607c3f4295e5b2a071bb5",
+          "sha1": "0e4e7ce3b2470ff38cb768e78f14fb12f70d3443",
+          "md5": "43adbe00ed5fe20288bbb3e69aaf6c33"
+        }
+      ]
+    }
+  ]
+}

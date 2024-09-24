@@ -1,0 +1,19 @@
+[versions]
+multiplatformJni = "1.0.0"
+
+jvmTarget = "17"
+agp = "8.4.2"
+kotlin = "2.0.10"
+kotlinxCoroutines = "1.9.0"
+androidMinSdk = "28"
+androidCompileSdk = "34"
+core = "1.13.1"
+
+[libraries]
+kotlin-test = { module = "org.jetbrains.kotlin:kotlin-test", version.ref = "kotlin" }
+kotlinx-coroutines = { module = "org.jetbrains.kotlinx:kotlinx-coroutines-core", version.ref = "kotlinxCoroutines" }
+androidx-core = { group = "androidx.core", name = "core", version.ref = "core" }
+
+[plugins]
+kotlin-multiplatform = { id = "org.jetbrains.kotlin.multiplatform", version.ref = "kotlin" }
+androidLibrary = { id = "com.android.library", version.ref = "agp" }
