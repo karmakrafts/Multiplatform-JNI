@@ -14,8 +14,13 @@
  * limitations under the License.
  */
 
+@file:OptIn(ExperimentalForeignApi::class)
+
 package io.karma.jni
 
+import kotlinx.cinterop.COpaquePointerVar
+import kotlinx.cinterop.ExperimentalForeignApi
+import kotlinx.cinterop.sizeOf
 import kotlin.reflect.KClass
 
 interface Type {
@@ -29,6 +34,7 @@ interface Type {
 
     val name: String
     val valueType: Type
+    val size: Int
 
     val jvmDescriptor: String
     val jvmName: String
@@ -39,6 +45,7 @@ interface Type {
 
 sealed class PrimitiveType private constructor(
     val type: KClass<*>,
+    override val size: Int,
     override val jvmName: String,
     override val jvmDescriptor: String,
 ) : Type {
@@ -46,14 +53,14 @@ sealed class PrimitiveType private constructor(
     override val valueType: Type
         get() = this
 
-    object VOID : PrimitiveType(Unit::class, "java.lang.Void", "V")
-    object BYTE : PrimitiveType(Byte::class, "java.lang.Byte", "B")
-    object SHORT : PrimitiveType(Short::class, "java.lang.Short", "S")
-    object INT : PrimitiveType(Int::class, "java.lang.Integer", "I")
-    object LONG : PrimitiveType(Long::class, "java.lang.Long", "J")
-    object FLOAT : PrimitiveType(Float::class, "java.lang.Float", "F")
-    object DOUBLE : PrimitiveType(Double::class, "java.lang.Double", "D")
-    object BOOLEAN : PrimitiveType(Boolean::class, "java.lang.Boolean", "Z")
+    object VOID : PrimitiveType(Unit::class, 0, "java.lang.Void", "V")
+    object BYTE : PrimitiveType(Byte::class, Byte.SIZE_BYTES, "java.lang.Byte", "B")
+    object SHORT : PrimitiveType(Short::class, Short.SIZE_BYTES, "java.lang.Short", "S")
+    object INT : PrimitiveType(Int::class, Int.SIZE_BYTES, "java.lang.Integer", "I")
+    object LONG : PrimitiveType(Long::class, Long.SIZE_BYTES, "java.lang.Long", "J")
+    object FLOAT : PrimitiveType(Float::class, Float.SIZE_BYTES, "java.lang.Float", "F")
+    object DOUBLE : PrimitiveType(Double::class, Double.SIZE_BYTES, "java.lang.Double", "D")
+    object BOOLEAN : PrimitiveType(Boolean::class, Byte.SIZE_BYTES, "java.lang.Boolean", "Z")
 
     override fun equals(other: Any?): Boolean = other === this
     override fun hashCode(): Int = type.hashCode()
@@ -66,6 +73,7 @@ class ClassType(
     override val valueType: Type
         get() = this
     override val name: String by lazy { descriptor.toString() }
+    override val size: Int = sizeOf<COpaquePointerVar>().toInt()
     override val jvmDescriptor: String = "L${descriptor.jvmName};"
 
     override fun equals(other: Any?): Boolean {
@@ -85,6 +93,7 @@ class ArrayType(
 ) : Type {
     override val name: String = "Array<${valueType.name}>"
     override val jvmDescriptor: String = "[${valueType.jvmDescriptor}"
+    override val size: Int = valueType.size * dimensions
 
     override fun equals(other: Any?): Boolean {
         return when (other) {

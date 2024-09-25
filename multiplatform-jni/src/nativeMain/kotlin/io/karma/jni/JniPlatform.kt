@@ -48,11 +48,11 @@ import kotlin.experimental.ExperimentalNativeApi
 import kotlin.native.internal.NativePtr
 
 object JniPlatform {
-    private val virtualMachineAddress: AtomicNativePtr = AtomicNativePtr(NativePtr.NULL)
-    var virtualMachine: JavaVMVar?
-        get() = interpretCPointer<JavaVMVar>(virtualMachineAddress.value)?.pointed
+    private val vmAddress: AtomicNativePtr = AtomicNativePtr(NativePtr.NULL)
+    var vm: JavaVMVar?
+        get() = interpretCPointer<JavaVMVar>(vmAddress.value)?.pointed
         set(value) {
-            virtualMachineAddress.value = value?.rawPtr ?: NativePtr.NULL
+            vmAddress.value = value?.rawPtr ?: NativePtr.NULL
         }
     var environment: ThreadLocalRef<JNIEnvVar?> = ThreadLocalRef()
 
@@ -60,8 +60,8 @@ object JniPlatform {
         return if (environment.value != null) environment.value
         else memScoped {
             val envAddress = allocPointerTo<JNIEnvVar>()
-            if (virtualMachine?.pointed?.AttachCurrentThread?.invoke(
-                    virtualMachine?.ptr,
+            if (vm?.pointed?.AttachCurrentThread?.invoke(
+                    vm?.ptr,
                     envAddress.ptr.reinterpret(),
                     null
                 ) != JNI_OK
@@ -73,7 +73,7 @@ object JniPlatform {
 
     fun detach() {
         if (environment.value == null) return
-        virtualMachine?.pointed?.DetachCurrentThread?.invoke(virtualMachine?.ptr)
+        vm?.pointed?.DetachCurrentThread?.invoke(vm?.ptr)
         environment.value = null
     }
 }
@@ -82,7 +82,7 @@ object JniPlatform {
 @CName("JNI_OnLoad")
 fun jniOnLoad(vm: JavaVMVar, reserved: COpaquePointer): jint {
     JniPlatform.let { platform ->
-        platform.virtualMachine = vm
+        platform.vm = vm
         return vm.pointed?.let {
             memScoped {
                 val address = allocPointerTo<JNIEnvVar>()

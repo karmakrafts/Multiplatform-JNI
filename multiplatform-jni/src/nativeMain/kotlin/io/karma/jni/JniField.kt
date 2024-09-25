@@ -260,16 +260,16 @@ class JvmField(
         env.pointed?.SetObjectField?.invoke(env.ptr, instance.handle, handle, value.handle)
     }
 
-    inline fun <reified R> set(env: JNIEnvVar, value: R) {
+    inline fun <reified R> set(env: JNIEnvVar, value: R, instance: JvmObject = JvmNull) {
         when (R::class) {
-            Byte::class -> setByte(env, value as Byte)
-            Short::class -> setShort(env, value as Short)
-            Int::class -> setInt(env, value as Int)
-            Long::class -> setLong(env, value as Long)
-            Float::class -> setFloat(env, value as Float)
-            Double::class -> setDouble(env, value as Double)
-            Boolean::class -> setBoolean(env, value as Boolean)
-            JvmObject::class -> setObject(env, value as JvmObject)
+            Byte::class -> setByte(env, value as Byte, instance)
+            Short::class -> setShort(env, value as Short, instance)
+            Int::class -> setInt(env, value as Int, instance)
+            Long::class -> setLong(env, value as Long, instance)
+            Float::class -> setFloat(env, value as Float, instance)
+            Double::class -> setDouble(env, value as Double, instance)
+            Boolean::class -> setBoolean(env, value as Boolean, instance)
+            JvmObject::class -> setObject(env, value as JvmObject, instance)
             else -> throw IllegalArgumentException("Unsupported field type")
         }
     }

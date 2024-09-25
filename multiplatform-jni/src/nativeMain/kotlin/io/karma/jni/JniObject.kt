@@ -53,17 +53,17 @@ interface JvmObject {
     }
 }
 
-object JvmNull : JvmObjectRef {
-    override val handle: jobject? = null
-    override fun delete(env: JNIEnvVar) {}
-}
-
-value class SimpleJvmObject internal constructor(
+internal value class SimpleJvmObject(
     override val handle: jobject?
 ) : JvmObject
 
 interface JvmObjectRef : JvmObject {
     fun delete(env: JNIEnvVar)
+}
+
+object JvmNull : JvmObjectRef {
+    override val handle: jobject? = null
+    override fun delete(env: JNIEnvVar) {}
 }
 
 internal value class JvmGlobalRef(
