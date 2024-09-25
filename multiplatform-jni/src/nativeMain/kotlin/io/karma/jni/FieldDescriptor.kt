@@ -16,6 +16,7 @@
 
 package io.karma.jni
 
+@ConsistentCopyVisibility
 data class FieldDescriptor internal constructor(
     val name: String,
     val type: Type,

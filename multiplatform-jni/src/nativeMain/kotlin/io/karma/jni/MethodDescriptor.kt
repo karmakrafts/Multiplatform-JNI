@@ -16,6 +16,7 @@
 
 package io.karma.jni
 
+@ConsistentCopyVisibility
 data class MethodDescriptor internal constructor(
     val name: String,
     val returnType: Type,
