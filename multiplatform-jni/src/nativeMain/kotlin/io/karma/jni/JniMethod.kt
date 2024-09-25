@@ -29,6 +29,7 @@ import jni.jmethodID
 import jni.jobjectVar
 import jni.jshortVar
 import jni.jvalue
+import kotlinx.cinterop.COpaquePointerVar
 import kotlinx.cinterop.CPointer
 import kotlinx.cinterop.ExperimentalForeignApi
 import kotlinx.cinterop.MemScope
@@ -40,6 +41,7 @@ import kotlinx.cinterop.memScoped
 import kotlinx.cinterop.pointed
 import kotlinx.cinterop.ptr
 import kotlinx.cinterop.set
+import kotlinx.cinterop.sizeOf
 
 interface MethodDescriptor {
     companion object {
@@ -136,7 +138,7 @@ class ArgumentScope(
 
     fun put(value: JvmObject) {
         interpretCPointer<jobjectVar>(address.rawPtr + offset)?.set(0, value.handle)
-        offset += Long.SIZE_BYTES
+        offset += sizeOf<COpaquePointerVar>()
     }
 }
 
