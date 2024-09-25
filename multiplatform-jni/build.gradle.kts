@@ -25,12 +25,11 @@ plugins {
 val jniFiles = projectDir.toPath() / "jni"
 
 kotlin {
-    jvm()
     mingwX64 {
         val jniHome = jniFiles / "windows-x64"
         compilations["main"].cinterops {
             val jni by creating {
-                compilerOpts("-I${jniHome / "include" / "win32"}")
+                compilerOpts("-I${jniHome / "include"}", "-I${jniHome / "include" / "win32"}")
                 headers("${jniHome / "include" / "jni.h"}")
             }
         }
@@ -54,17 +53,8 @@ kotlin {
         target.apply {
             compilations["main"].cinterops {
                 val jni by creating {
-                    compilerOpts("-I${jniHome / "include" / "linux"}")
+                    compilerOpts("-I${jniHome / "include"}", "-I${jniHome / "include" / "linux"}")
                     headers("${jniHome / "include" / "jni.h"}")
-                }
-            }
-            binaries {
-                sharedLib {
-                    linkerOpts(
-                        "-L${jniHome / "lib"}",
-                        "-llibjawt.so",
-                        "-llibjvm.so"
-                    )
                 }
             }
         }
@@ -79,20 +69,13 @@ kotlin {
         target.apply {
             compilations["main"].cinterops {
                 val jni by creating {
-                    compilerOpts("-I${jniHome / "include" / "darwin"}")
+                    compilerOpts("-I${jniHome / "include"}", "-I${jniHome / "include" / "darwin"}")
                     headers("${jniHome / "include" / "jni.h"}")
                 }
             }
             binaries {
                 framework {
                     baseName = "MultiplatformJNI"
-                }
-                sharedLib {
-                    linkerOpts(
-                        "-L${jniHome / "lib"}",
-                        "-llibjawt.dylib",
-                        "-llibjvm.dylib"
-                    )
                 }
             }
         }

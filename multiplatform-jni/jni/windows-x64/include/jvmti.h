@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2002, 2021, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2003, 2011, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -23,7 +23,8 @@
  * questions.
  */
 
- /* AUTOMATICALLY GENERATED FILE - DO NOT EDIT */
+    /* AUTOMATICALLY GENERATED FILE - DO NOT EDIT */
+
 
     /* Include file for the Java(tm) Virtual Machine Tool Interface */
 
@@ -41,10 +42,8 @@ enum {
     JVMTI_VERSION_1_0 = 0x30010000,
     JVMTI_VERSION_1_1 = 0x30010100,
     JVMTI_VERSION_1_2 = 0x30010200,
-    JVMTI_VERSION_9   = 0x30090000,
-    JVMTI_VERSION_11  = 0x300B0000,
 
-    JVMTI_VERSION = 0x30000000 + (17 * 0x10000) + ( 0 * 0x100) + 0  /* version: 17.0.0 */
+    JVMTI_VERSION = 0x30000000 + (1 * 0x10000) + (2 * 0x100) + 1  /* version: 1.2.1 */
 };
 
 JNIEXPORT jint JNICALL
@@ -349,7 +348,6 @@ typedef enum {
     JVMTI_ERROR_INVALID_METHODID = 23,
     JVMTI_ERROR_INVALID_LOCATION = 24,
     JVMTI_ERROR_INVALID_FIELDID = 25,
-    JVMTI_ERROR_INVALID_MODULE = 26,
     JVMTI_ERROR_NO_MORE_FRAMES = 31,
     JVMTI_ERROR_OPAQUE_FRAME = 32,
     JVMTI_ERROR_TYPE_MISMATCH = 34,
@@ -371,9 +369,7 @@ typedef enum {
     JVMTI_ERROR_NAMES_DONT_MATCH = 69,
     JVMTI_ERROR_UNSUPPORTED_REDEFINITION_CLASS_MODIFIERS_CHANGED = 70,
     JVMTI_ERROR_UNSUPPORTED_REDEFINITION_METHOD_MODIFIERS_CHANGED = 71,
-    JVMTI_ERROR_UNSUPPORTED_REDEFINITION_CLASS_ATTRIBUTE_CHANGED = 72,
     JVMTI_ERROR_UNMODIFIABLE_CLASS = 79,
-    JVMTI_ERROR_UNMODIFIABLE_MODULE = 80,
     JVMTI_ERROR_NOT_AVAILABLE = 98,
     JVMTI_ERROR_MUST_POSSESS_CAPABILITY = 99,
     JVMTI_ERROR_NULL_POINTER = 100,
@@ -426,56 +422,55 @@ typedef enum {
     JVMTI_EVENT_GARBAGE_COLLECTION_FINISH = 82,
     JVMTI_EVENT_OBJECT_FREE = 83,
     JVMTI_EVENT_VM_OBJECT_ALLOC = 84,
-    JVMTI_EVENT_SAMPLED_OBJECT_ALLOC = 86,
-    JVMTI_MAX_EVENT_TYPE_VAL = 86
+    JVMTI_MAX_EVENT_TYPE_VAL = 84
 } jvmtiEvent;
 
 
     /* Pre-Declarations */
-struct jvmtiThreadInfo;
-typedef struct jvmtiThreadInfo jvmtiThreadInfo;
-struct jvmtiMonitorStackDepthInfo;
-typedef struct jvmtiMonitorStackDepthInfo jvmtiMonitorStackDepthInfo;
-struct jvmtiThreadGroupInfo;
-typedef struct jvmtiThreadGroupInfo jvmtiThreadGroupInfo;
-struct jvmtiFrameInfo;
-typedef struct jvmtiFrameInfo jvmtiFrameInfo;
-struct jvmtiStackInfo;
-typedef struct jvmtiStackInfo jvmtiStackInfo;
-struct jvmtiHeapReferenceInfoField;
-typedef struct jvmtiHeapReferenceInfoField jvmtiHeapReferenceInfoField;
-struct jvmtiHeapReferenceInfoArray;
-typedef struct jvmtiHeapReferenceInfoArray jvmtiHeapReferenceInfoArray;
-struct jvmtiHeapReferenceInfoConstantPool;
-typedef struct jvmtiHeapReferenceInfoConstantPool jvmtiHeapReferenceInfoConstantPool;
-struct jvmtiHeapReferenceInfoStackLocal;
-typedef struct jvmtiHeapReferenceInfoStackLocal jvmtiHeapReferenceInfoStackLocal;
-struct jvmtiHeapReferenceInfoJniLocal;
-typedef struct jvmtiHeapReferenceInfoJniLocal jvmtiHeapReferenceInfoJniLocal;
-struct jvmtiHeapReferenceInfoReserved;
-typedef struct jvmtiHeapReferenceInfoReserved jvmtiHeapReferenceInfoReserved;
-union jvmtiHeapReferenceInfo;
-typedef union jvmtiHeapReferenceInfo jvmtiHeapReferenceInfo;
-struct jvmtiHeapCallbacks;
-typedef struct jvmtiHeapCallbacks jvmtiHeapCallbacks;
-struct jvmtiClassDefinition;
-typedef struct jvmtiClassDefinition jvmtiClassDefinition;
-struct jvmtiMonitorUsage;
-typedef struct jvmtiMonitorUsage jvmtiMonitorUsage;
-struct jvmtiLineNumberEntry;
-typedef struct jvmtiLineNumberEntry jvmtiLineNumberEntry;
-struct jvmtiLocalVariableEntry;
-typedef struct jvmtiLocalVariableEntry jvmtiLocalVariableEntry;
-struct jvmtiParamInfo;
-typedef struct jvmtiParamInfo jvmtiParamInfo;
-struct jvmtiExtensionFunctionInfo;
-typedef struct jvmtiExtensionFunctionInfo jvmtiExtensionFunctionInfo;
-struct jvmtiExtensionEventInfo;
-typedef struct jvmtiExtensionEventInfo jvmtiExtensionEventInfo;
-struct jvmtiTimerInfo;
-typedef struct jvmtiTimerInfo jvmtiTimerInfo;
-struct jvmtiAddrLocationMap;
-typedef struct jvmtiAddrLocationMap jvmtiAddrLocationMap;
+struct _jvmtiThreadInfo;
+typedef struct _jvmtiThreadInfo jvmtiThreadInfo;
+struct _jvmtiMonitorStackDepthInfo;
+typedef struct _jvmtiMonitorStackDepthInfo jvmtiMonitorStackDepthInfo;
+struct _jvmtiThreadGroupInfo;
+typedef struct _jvmtiThreadGroupInfo jvmtiThreadGroupInfo;
+struct _jvmtiFrameInfo;
+typedef struct _jvmtiFrameInfo jvmtiFrameInfo;
+struct _jvmtiStackInfo;
+typedef struct _jvmtiStackInfo jvmtiStackInfo;
+struct _jvmtiHeapReferenceInfoField;
+typedef struct _jvmtiHeapReferenceInfoField jvmtiHeapReferenceInfoField;
+struct _jvmtiHeapReferenceInfoArray;
+typedef struct _jvmtiHeapReferenceInfoArray jvmtiHeapReferenceInfoArray;
+struct _jvmtiHeapReferenceInfoConstantPool;
+typedef struct _jvmtiHeapReferenceInfoConstantPool jvmtiHeapReferenceInfoConstantPool;
+struct _jvmtiHeapReferenceInfoStackLocal;
+typedef struct _jvmtiHeapReferenceInfoStackLocal jvmtiHeapReferenceInfoStackLocal;
+struct _jvmtiHeapReferenceInfoJniLocal;
+typedef struct _jvmtiHeapReferenceInfoJniLocal jvmtiHeapReferenceInfoJniLocal;
+struct _jvmtiHeapReferenceInfoReserved;
+typedef struct _jvmtiHeapReferenceInfoReserved jvmtiHeapReferenceInfoReserved;
+union _jvmtiHeapReferenceInfo;
+typedef union _jvmtiHeapReferenceInfo jvmtiHeapReferenceInfo;
+struct _jvmtiHeapCallbacks;
+typedef struct _jvmtiHeapCallbacks jvmtiHeapCallbacks;
+struct _jvmtiClassDefinition;
+typedef struct _jvmtiClassDefinition jvmtiClassDefinition;
+struct _jvmtiMonitorUsage;
+typedef struct _jvmtiMonitorUsage jvmtiMonitorUsage;
+struct _jvmtiLineNumberEntry;
+typedef struct _jvmtiLineNumberEntry jvmtiLineNumberEntry;
+struct _jvmtiLocalVariableEntry;
+typedef struct _jvmtiLocalVariableEntry jvmtiLocalVariableEntry;
+struct _jvmtiParamInfo;
+typedef struct _jvmtiParamInfo jvmtiParamInfo;
+struct _jvmtiExtensionFunctionInfo;
+typedef struct _jvmtiExtensionFunctionInfo jvmtiExtensionFunctionInfo;
+struct _jvmtiExtensionEventInfo;
+typedef struct _jvmtiExtensionEventInfo jvmtiExtensionEventInfo;
+struct _jvmtiTimerInfo;
+typedef struct _jvmtiTimerInfo jvmtiTimerInfo;
+struct _jvmtiAddrLocationMap;
+typedef struct _jvmtiAddrLocationMap jvmtiAddrLocationMap;
 
     /* Function Types */
 
@@ -520,43 +515,43 @@ typedef void (JNICALL *jvmtiExtensionEvent)
 
 
     /* Structure Types */
-struct jvmtiThreadInfo {
+struct _jvmtiThreadInfo {
     char* name;
     jint priority;
     jboolean is_daemon;
     jthreadGroup thread_group;
     jobject context_class_loader;
 };
-struct jvmtiMonitorStackDepthInfo {
+struct _jvmtiMonitorStackDepthInfo {
     jobject monitor;
     jint stack_depth;
 };
-struct jvmtiThreadGroupInfo {
+struct _jvmtiThreadGroupInfo {
     jthreadGroup parent;
     char* name;
     jint max_priority;
     jboolean is_daemon;
 };
-struct jvmtiFrameInfo {
+struct _jvmtiFrameInfo {
     jmethodID method;
     jlocation location;
 };
-struct jvmtiStackInfo {
+struct _jvmtiStackInfo {
     jthread thread;
     jint state;
     jvmtiFrameInfo* frame_buffer;
     jint frame_count;
 };
-struct jvmtiHeapReferenceInfoField {
+struct _jvmtiHeapReferenceInfoField {
     jint index;
 };
-struct jvmtiHeapReferenceInfoArray {
+struct _jvmtiHeapReferenceInfoArray {
     jint index;
 };
-struct jvmtiHeapReferenceInfoConstantPool {
+struct _jvmtiHeapReferenceInfoConstantPool {
     jint index;
 };
-struct jvmtiHeapReferenceInfoStackLocal {
+struct _jvmtiHeapReferenceInfoStackLocal {
     jlong thread_tag;
     jlong thread_id;
     jint depth;
@@ -564,13 +559,13 @@ struct jvmtiHeapReferenceInfoStackLocal {
     jlocation location;
     jint slot;
 };
-struct jvmtiHeapReferenceInfoJniLocal {
+struct _jvmtiHeapReferenceInfoJniLocal {
     jlong thread_tag;
     jlong thread_id;
     jint depth;
     jmethodID method;
 };
-struct jvmtiHeapReferenceInfoReserved {
+struct _jvmtiHeapReferenceInfoReserved {
     jlong reserved1;
     jlong reserved2;
     jlong reserved3;
@@ -580,7 +575,7 @@ struct jvmtiHeapReferenceInfoReserved {
     jlong reserved7;
     jlong reserved8;
 };
-union jvmtiHeapReferenceInfo {
+union _jvmtiHeapReferenceInfo {
     jvmtiHeapReferenceInfoField field;
     jvmtiHeapReferenceInfoArray array;
     jvmtiHeapReferenceInfoConstantPool constant_pool;
@@ -588,7 +583,7 @@ union jvmtiHeapReferenceInfo {
     jvmtiHeapReferenceInfoJniLocal jni_local;
     jvmtiHeapReferenceInfoReserved other;
 };
-struct jvmtiHeapCallbacks {
+struct _jvmtiHeapCallbacks {
     jvmtiHeapIterationCallback heap_iteration_callback;
     jvmtiHeapReferenceCallback heap_reference_callback;
     jvmtiPrimitiveFieldCallback primitive_field_callback;
@@ -606,12 +601,12 @@ struct jvmtiHeapCallbacks {
     jvmtiReservedCallback reserved14;
     jvmtiReservedCallback reserved15;
 };
-struct jvmtiClassDefinition {
+struct _jvmtiClassDefinition {
     jclass klass;
     jint class_byte_count;
     const unsigned char* class_bytes;
 };
-struct jvmtiMonitorUsage {
+struct _jvmtiMonitorUsage {
     jthread owner;
     jint entry_count;
     jint waiter_count;
@@ -619,11 +614,11 @@ struct jvmtiMonitorUsage {
     jint notify_waiter_count;
     jthread* notify_waiters;
 };
-struct jvmtiLineNumberEntry {
+struct _jvmtiLineNumberEntry {
     jlocation start_location;
     jint line_number;
 };
-struct jvmtiLocalVariableEntry {
+struct _jvmtiLocalVariableEntry {
     jlocation start_location;
     jint length;
     char* name;
@@ -631,13 +626,13 @@ struct jvmtiLocalVariableEntry {
     char* generic_signature;
     jint slot;
 };
-struct jvmtiParamInfo {
+struct _jvmtiParamInfo {
     char* name;
     jvmtiParamKind kind;
     jvmtiParamTypes base_type;
     jboolean null_ok;
 };
-struct jvmtiExtensionFunctionInfo {
+struct _jvmtiExtensionFunctionInfo {
     jvmtiExtensionFunction func;
     char* id;
     char* short_description;
@@ -646,14 +641,14 @@ struct jvmtiExtensionFunctionInfo {
     jint error_count;
     jvmtiError* errors;
 };
-struct jvmtiExtensionEventInfo {
+struct _jvmtiExtensionEventInfo {
     jint extension_event_index;
     char* id;
     char* short_description;
     jint param_count;
     jvmtiParamInfo* params;
 };
-struct jvmtiTimerInfo {
+struct _jvmtiTimerInfo {
     jlong max_value;
     jboolean may_skip_forward;
     jboolean may_skip_backward;
@@ -661,7 +656,7 @@ struct jvmtiTimerInfo {
     jlong reserved1;
     jlong reserved2;
 };
-struct jvmtiAddrLocationMap {
+struct _jvmtiAddrLocationMap {
     const void* start_address;
     jlocation location;
 };
@@ -708,10 +703,7 @@ typedef struct {
     unsigned int can_retransform_any_class : 1;
     unsigned int can_generate_resource_exhaustion_heap_events : 1;
     unsigned int can_generate_resource_exhaustion_threads_events : 1;
-    unsigned int can_generate_early_vmstart : 1;
-    unsigned int can_generate_early_class_hook_events : 1;
-    unsigned int can_generate_sampled_object_alloc_events : 1;
-    unsigned int : 4;
+    unsigned int : 7;
     unsigned int : 16;
     unsigned int : 16;
     unsigned int : 16;
@@ -891,14 +883,6 @@ typedef void (JNICALL *jvmtiEventResourceExhausted)
      const void* reserved,
      const char* description);
 
-typedef void (JNICALL *jvmtiEventSampledObjectAlloc)
-    (jvmtiEnv *jvmti_env,
-     JNIEnv* jni_env,
-     jthread thread,
-     jobject object,
-     jclass object_klass,
-     jlong size);
-
 typedef void (JNICALL *jvmtiEventSingleStep)
     (jvmtiEnv *jvmti_env,
      JNIEnv* jni_env,
@@ -1010,10 +994,6 @@ typedef struct {
     jvmtiEventObjectFree ObjectFree;
                               /*   84 : VM Object Allocation */
     jvmtiEventVMObjectAlloc VMObjectAlloc;
-                              /*   85 */
-    jvmtiEventReserved reserved85;
-                              /*   86 : Sampled Object Allocation */
-    jvmtiEventSampledObjectAlloc SampledObjectAlloc;
 } jvmtiEventCallbacks;
 
 
@@ -1031,10 +1011,8 @@ typedef struct jvmtiInterface_1_ {
     jthread event_thread,
      ...);
 
-  /*   3 : Get All Modules */
-  jvmtiError (JNICALL *GetAllModules) (jvmtiEnv* env,
-    jint* module_count_ptr,
-    jobject** modules_ptr);
+  /*   3 :  RESERVED */
+  void *reserved3;
 
   /*   4 : Get All Threads */
   jvmtiError (JNICALL *GetAllThreads) (jvmtiEnv* env,
@@ -1235,11 +1213,8 @@ typedef struct jvmtiInterface_1_ {
     jmethodID method,
     jlocation location);
 
-  /*   40 : Get Named Module */
-  jvmtiError (JNICALL *GetNamedModule) (jvmtiEnv* env,
-    jobject class_loader,
-    const char* package_name,
-    jobject* module_ptr);
+  /*   40 :  RESERVED */
+  void *reserved40;
 
   /*   41 : Set Field Access Watch */
   jvmtiError (JNICALL *SetFieldAccessWatch) (jvmtiEnv* env,
@@ -1517,38 +1492,23 @@ typedef struct jvmtiInterface_1_ {
     const jthread* request_list,
     jvmtiError* results);
 
-  /*   94 : Add Module Reads */
-  jvmtiError (JNICALL *AddModuleReads) (jvmtiEnv* env,
-    jobject module,
-    jobject to_module);
+  /*   94 :  RESERVED */
+  void *reserved94;
 
-  /*   95 : Add Module Exports */
-  jvmtiError (JNICALL *AddModuleExports) (jvmtiEnv* env,
-    jobject module,
-    const char* pkg_name,
-    jobject to_module);
+  /*   95 :  RESERVED */
+  void *reserved95;
 
-  /*   96 : Add Module Opens */
-  jvmtiError (JNICALL *AddModuleOpens) (jvmtiEnv* env,
-    jobject module,
-    const char* pkg_name,
-    jobject to_module);
+  /*   96 :  RESERVED */
+  void *reserved96;
 
-  /*   97 : Add Module Uses */
-  jvmtiError (JNICALL *AddModuleUses) (jvmtiEnv* env,
-    jobject module,
-    jclass service);
+  /*   97 :  RESERVED */
+  void *reserved97;
 
-  /*   98 : Add Module Provides */
-  jvmtiError (JNICALL *AddModuleProvides) (jvmtiEnv* env,
-    jobject module,
-    jclass service,
-    jclass impl_class);
+  /*   98 :  RESERVED */
+  void *reserved98;
 
-  /*   99 : Is Modifiable Module */
-  jvmtiError (JNICALL *IsModifiableModule) (jvmtiEnv* env,
-    jobject module,
-    jboolean* is_modifiable_module_ptr);
+  /*   99 :  RESERVED */
+  void *reserved99;
 
   /*   100 : Get All Stack Traces */
   jvmtiError (JNICALL *GetAllStackTraces) (jvmtiEnv* env,
@@ -1715,7 +1675,7 @@ typedef struct jvmtiInterface_1_ {
   /*   132 : Set System Property */
   jvmtiError (JNICALL *SetSystemProperty) (jvmtiEnv* env,
     const char* property,
-    const char* value_ptr);
+    const char* value);
 
   /*   133 : Get Phase */
   jvmtiError (JNICALL *GetPhase) (jvmtiEnv* env,
@@ -1820,10 +1780,6 @@ typedef struct jvmtiInterface_1_ {
     jthread thread,
     jint depth,
     jobject* value_ptr);
-
-  /*   156 : Set Heap Sampling Interval */
-  jvmtiError (JNICALL *SetHeapSamplingInterval) (jvmtiEnv* env,
-    jint sampling_interval);
 
 } jvmtiInterface_1;
 
@@ -2181,50 +2137,6 @@ struct _jvmtiEnv {
     return functions->ClearFieldModificationWatch(this, klass, field);
   }
 
-  jvmtiError GetAllModules(jint* module_count_ptr,
-            jobject** modules_ptr) {
-    return functions->GetAllModules(this, module_count_ptr, modules_ptr);
-  }
-
-  jvmtiError GetNamedModule(jobject class_loader,
-            const char* package_name,
-            jobject* module_ptr) {
-    return functions->GetNamedModule(this, class_loader, package_name, module_ptr);
-  }
-
-  jvmtiError AddModuleReads(jobject module,
-            jobject to_module) {
-    return functions->AddModuleReads(this, module, to_module);
-  }
-
-  jvmtiError AddModuleExports(jobject module,
-            const char* pkg_name,
-            jobject to_module) {
-    return functions->AddModuleExports(this, module, pkg_name, to_module);
-  }
-
-  jvmtiError AddModuleOpens(jobject module,
-            const char* pkg_name,
-            jobject to_module) {
-    return functions->AddModuleOpens(this, module, pkg_name, to_module);
-  }
-
-  jvmtiError AddModuleUses(jobject module,
-            jclass service) {
-    return functions->AddModuleUses(this, module, service);
-  }
-
-  jvmtiError AddModuleProvides(jobject module,
-            jclass service,
-            jclass impl_class) {
-    return functions->AddModuleProvides(this, module, service, impl_class);
-  }
-
-  jvmtiError IsModifiableModule(jobject module,
-            jboolean* is_modifiable_module_ptr) {
-    return functions->IsModifiableModule(this, module, is_modifiable_module_ptr);
-  }
-
   jvmtiError GetLoadedClasses(jint* class_count_ptr,
             jclass** classes_ptr) {
     return functions->GetLoadedClasses(this, class_count_ptr, classes_ptr);
@@ -2572,8 +2484,8 @@ struct _jvmtiEnv {
   }
 
   jvmtiError SetSystemProperty(const char* property,
-            const char* value_ptr) {
-    return functions->SetSystemProperty(this, property, value_ptr);
+            const char* value) {
+    return functions->SetSystemProperty(this, property, value);
   }
 
   jvmtiError GetPhase(jvmtiPhase* phase_ptr) {
@@ -2610,10 +2522,6 @@ struct _jvmtiEnv {
     return functions->GetJLocationFormat(this, format_ptr);
   }
 
-  jvmtiError SetHeapSamplingInterval(jint sampling_interval) {
-    return functions->SetHeapSamplingInterval(this, sampling_interval);
-  }
-
 #endif /* __cplusplus */
 };
 
@@ -2623,3 +2531,4 @@ struct _jvmtiEnv {
 #endif /* __cplusplus */
 
 #endif /* !_JAVA_JVMTI_H_ */
+
