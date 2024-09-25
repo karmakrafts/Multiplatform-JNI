@@ -14,17 +14,14 @@
  * limitations under the License.
  */
 
-@file:OptIn(ExperimentalForeignApi::class, ExperimentalNativeApi::class)
+@file:OptIn(ExperimentalForeignApi::class)
 
 package io.karma.jni
 
 import jni.JNIEnvVar
-import jni.JNI_ERR
 import jni.JNI_FALSE
 import jni.JNI_OK
 import jni.JNI_TRUE
-import jni.JNI_VERSION_1_8
-import jni.JavaVMVar
 import jni.jbyte
 import jni.jclass
 import jni.jfieldID
@@ -44,7 +41,6 @@ import kotlinx.cinterop.addressOf
 import kotlinx.cinterop.allocArray
 import kotlinx.cinterop.allocPointerTo
 import kotlinx.cinterop.convert
-import kotlinx.cinterop.interpretCPointer
 import kotlinx.cinterop.invoke
 import kotlinx.cinterop.memScoped
 import kotlinx.cinterop.pointed
@@ -53,38 +49,6 @@ import kotlinx.cinterop.reinterpret
 import kotlinx.cinterop.toKString
 import kotlinx.cinterop.usePinned
 import platform.posix.memcpy
-import kotlin.concurrent.AtomicNativePtr
-import kotlin.experimental.ExperimentalNativeApi
-import kotlin.native.concurrent.ThreadLocal
-import kotlin.native.internal.NativePtr
-
-private val virtualMachineAddress: AtomicNativePtr = AtomicNativePtr(NativePtr.NULL)
-var virtualMachine: JavaVMVar?
-    get() = interpretCPointer<JavaVMVar>(virtualMachineAddress.value)?.pointed
-    set(value) {
-        virtualMachineAddress.value = value?.rawPtr ?: NativePtr.NULL
-    }
-
-@ThreadLocal
-var environment: JNIEnvVar? = null
-
-@Suppress("UNUSED_PARAMETER", "UNUSED")
-@CName("JNI_OnLoad")
-fun jniOnLoad(vm: JavaVMVar, reserved: COpaquePointer): jint {
-    virtualMachine = vm
-    return vm.pointed?.let {
-        memScoped {
-            val address = allocPointerTo<JNIEnvVar>()
-            requireNotNull(it.GetEnv)(
-                vm.ptr,
-                address.ptr.reinterpret(),
-                JNI_VERSION_1_8
-            )
-            environment = requireNotNull(address.pointed)
-        }
-        return@let JNI_VERSION_1_8
-    } ?: JNI_ERR
-}
 
 fun attachThreadToVm(): JNIEnvVar? {
     return if (environment != null) environment
@@ -110,35 +74,6 @@ fun detachThreadFromVm() {
         virtualMachine?.ptr
     )
     environment = null
-}
-
-value class JNIEnvScope(val env: JNIEnvVar) {
-    fun jstring.toKString(): String = toKString(env)
-    fun String.toJString(): jstring = toJString(env)
-
-    fun jclass.findField(descriptor: FieldDescriptor): jfieldID? =
-        findField(env, descriptor)
-
-    fun jclass.findMethod(descriptor: MethodDescriptor): jmethodID? =
-        findMethod(env, descriptor)
-
-    inline operator fun <reified R> jmethodID.invoke(instance: jobject, vararg args: Any?): R? {
-        return invoke<R>(env, instance, *args)
-    }
-
-    inline fun <reified R> whileDetached(scope: () -> R): R {
-        detachThreadFromVm()
-        val result = scope()
-        attachThreadToVm()
-        return result
-    }
-}
-
-inline fun <reified R> jniScoped(scope: JNIEnvScope.() -> R): R {
-    val result =
-        scope(JNIEnvScope(requireNotNull(attachThreadToVm()) { "Could not access JNI environment" }))
-    detachThreadFromVm()
-    return result
 }
 
 fun MemScope.allocCString(value: String): CPointer<ByteVar> {
