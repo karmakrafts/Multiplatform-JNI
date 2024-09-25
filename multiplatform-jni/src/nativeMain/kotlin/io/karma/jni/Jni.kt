@@ -18,37 +18,12 @@
 
 package io.karma.jni
 
-import jni.JNIEnvVar
 import jni.JNI_FALSE
 import jni.JNI_TRUE
 import jni.jboolean
-import jni.jobject
 import kotlinx.cinterop.ExperimentalForeignApi
 import kotlinx.cinterop.convert
-import kotlinx.cinterop.invoke
-import kotlinx.cinterop.pointed
-import kotlinx.cinterop.ptr
 
 fun jboolean.toKBoolean(): Boolean = this == JNI_TRUE.convert<jboolean>()
 fun Boolean.toJBoolean(): jboolean =
     if (this) JNI_TRUE.convert<jboolean>() else JNI_FALSE.convert<jboolean>()
-
-@Suppress("UNCHECKED_CAST")
-fun <O : jobject> O.newGlobalRefOrNull(env: JNIEnvVar): O? =
-    env.pointed?.NewGlobalRef?.invoke(env.ptr, this) as? O?
-
-fun <O : jobject> O.newGlobalRef(env: JNIEnvVar): O =
-    requireNotNull(newGlobalRefOrNull(env)) { "Could not create global reference" }
-
-fun <O : jobject> O.deleteGlobalRef(env: JNIEnvVar) =
-    env.pointed?.DeleteGlobalRef?.invoke(env.ptr, this)
-
-@Suppress("UNCHECKED_CAST")
-fun <O : jobject> O.newLocalRefOrNull(env: JNIEnvVar): O? =
-    env.pointed?.NewLocalRef?.invoke(env.ptr, this) as? O?
-
-fun <O : jobject> O.newLocalRef(env: JNIEnvVar): O =
-    requireNotNull(newLocalRefOrNull(env)) { "Could not create local reference" }
-
-fun <O : jobject> O.deleteLocalRef(env: JNIEnvVar) =
-    env.pointed?.DeleteLocalRef?.invoke(env.ptr, this)

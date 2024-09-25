@@ -19,11 +19,10 @@
 package io.karma.jni
 
 import jni.JNIEnvVar
-import jni.jobject
 import jni.jstring
 import kotlinx.cinterop.ExperimentalForeignApi
 
-value class JniScope(val env: JNIEnvVar) {
+value class JniScope(private val env: JNIEnvVar) {
     fun jstring.toKString(): String = toKString(env)
     fun String.toJString(): jstring = toJString(env)
 
@@ -41,30 +40,29 @@ value class JniScope(val env: JNIEnvVar) {
     fun JvmClass.findMethod(descriptor: MethodDescriptor): JvmMethod = findMethod(env, descriptor)
     fun JvmClass.findMethod(closure: MethodDescriptorBuilder.() -> Unit): JvmMethod = findMethod(env, closure)
 
-    fun JvmField.getByte(instance: jobject? = null): Byte = getByte(env, instance)
-    fun JvmField.getShort(instance: jobject? = null): Short = getShort(env, instance)
-    fun JvmField.getInt(instance: jobject? = null): Int = getInt(env, instance)
-    fun JvmField.getLong(instance: jobject? = null): Long = getLong(env, instance)
-    fun JvmField.getFloat(instance: jobject? = null): Float = getFloat(env, instance)
-    fun JvmField.getDouble(instance: jobject? = null): Double = getDouble(env, instance)
-    fun JvmField.getBoolean(instance: jobject? = null): Boolean = getBoolean(env, instance)
+    fun JvmField.getByte(instance: JvmObject = JvmNull): Byte = getByte(env, instance)
+    fun JvmField.getShort(instance: JvmObject = JvmNull): Short = getShort(env, instance)
+    fun JvmField.getInt(instance: JvmObject = JvmNull): Int = getInt(env, instance)
+    fun JvmField.getLong(instance: JvmObject = JvmNull): Long = getLong(env, instance)
+    fun JvmField.getFloat(instance: JvmObject = JvmNull): Float = getFloat(env, instance)
+    fun JvmField.getDouble(instance: JvmObject = JvmNull): Double = getDouble(env, instance)
+    fun JvmField.getBoolean(instance: JvmObject = JvmNull): Boolean = getBoolean(env, instance)
+    fun JvmField.getObject(instance: JvmObject = JvmNull): JvmObject = getObject(env, instance)
 
-    fun JvmField.setByte(value: Byte, instance: jobject? = null) = setByte(env, value, instance)
-    fun JvmField.setShort(value: Short, instance: jobject? = null) = setShort(env, value, instance)
-    fun JvmField.setInt(value: Int, instance: jobject? = null) = setInt(env, value, instance)
-    fun JvmField.setLong(value: Long, instance: jobject? = null) = setLong(env, value, instance)
-    fun JvmField.setFloat(value: Float, instance: jobject? = null) = setFloat(env, value, instance)
-    fun JvmField.setDouble(value: Double, instance: jobject? = null) = setDouble(env, value, instance)
-    fun JvmField.setBoolean(value: Boolean, instance: jobject? = null) = setBoolean(env, value, instance)
+    fun JvmField.setByte(value: Byte, instance: JvmObject = JvmNull) = setByte(env, value, instance)
+    fun JvmField.setShort(value: Short, instance: JvmObject = JvmNull) = setShort(env, value, instance)
+    fun JvmField.setInt(value: Int, instance: JvmObject = JvmNull) = setInt(env, value, instance)
+    fun JvmField.setLong(value: Long, instance: JvmObject = JvmNull) = setLong(env, value, instance)
+    fun JvmField.setFloat(value: Float, instance: JvmObject = JvmNull) = setFloat(env, value, instance)
+    fun JvmField.setDouble(value: Double, instance: JvmObject = JvmNull) = setDouble(env, value, instance)
+    fun JvmField.setBoolean(value: Boolean, instance: JvmObject = JvmNull) = setBoolean(env, value, instance)
+    fun JvmField.setObject(value: JvmObject, instance: JvmObject = JvmNull) = setObject(env, value, instance)
+
+    fun JvmObject.createGlobalRef(): JvmObjectRef = createGlobalRef(env)
+    fun JvmObject.createLocalRef(): JvmObjectRef = createLocalRef(env)
+    fun JvmObject.createWeakRef(): JvmObjectRef = createWeakRef(env)
+    fun JvmObjectRef.delete() = delete(env)
     // @formatter:on
-
-    fun <O : jobject> O.newGlobalRefOrNull(): O? = newGlobalRefOrNull(env)
-    fun <O : jobject> O.newGlobalRef(): O = newGlobalRef(env)
-    fun <O : jobject> O.deleteGlobalRef() = deleteGlobalRef(env)
-
-    fun <O : jobject> O.newLocalRefOrNull(): O? = newLocalRefOrNull(env)
-    fun <O : jobject> O.newLocalRef(): O = newLocalRef(env)
-    fun <O : jobject> O.deleteLocalRef() = deleteLocalRef(env)
 
     inline fun <reified R> whileDetached(scope: () -> R): R {
         JniPlatform.detach()
