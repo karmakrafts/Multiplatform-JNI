@@ -20,8 +20,8 @@ import kotlin.reflect.KClass
 
 interface Type {
     companion object {
-        fun of(qualifiedName: String): Type = ClassType(qualifiedName)
-        fun of(type: KClass<*>): Type = ClassType(requireNotNull(type.qualifiedName))
+        fun of(qualifiedName: String): Type = ClassType(ClassName.create(qualifiedName))
+        fun of(type: KClass<*>): Type = ClassType(ClassName.of(type))
         inline fun <reified T> of(): Type = of(T::class)
     }
 
@@ -58,12 +58,25 @@ sealed class PrimitiveType private constructor(
     override fun toString(): String = name
 }
 
+data class ClassName(val segments: List<String>) {
+    companion object {
+        fun fromJvmName(name: String): ClassName = ClassName(name.split("/"))
+        fun create(name: String): ClassName = ClassName(name.split("\\."))
+        fun of(type: KClass<*>): ClassName =
+            create(requireNotNull(type.qualifiedName) { "Could not get type name" })
+    }
+
+    val jvmName: String by lazy { segments.joinToString { "/" } }
+    override fun toString(): String = segments.joinToString { "." }
+}
+
 class ClassType(
-    override val name: String
+    val className: ClassName
 ) : Type {
     override val valueType: Type
         get() = this
-    override val jvmDescriptor: String = "L$name;"
+    override val name: String by lazy { className.toString() }
+    override val jvmDescriptor: String = "L${className.jvmName};"
 
     override fun equals(other: Any?): Boolean {
         return when (other) {

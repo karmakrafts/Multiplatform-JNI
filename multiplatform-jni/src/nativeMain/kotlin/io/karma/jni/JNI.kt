@@ -84,75 +84,104 @@ fun MemScope.allocCString(value: String): CPointer<ByteVar> {
     }
 }
 
-fun jstring.toKString(env: JNIEnvVar): String {
-    val data = requireNotNull(
-        requireNotNull(env.pointed?.GetStringUTFChars) { "Could not access JNI:GetStringUTFChars function" }(
-            env.ptr,
-            this@toKString,
-            null
-        )
-    ) { "Could not retrieve string base address" }
-    val result = data.toKString()
-    requireNotNull(env.pointed?.ReleaseStringUTFChars) { "Could not access JNI:ReleaseStringUTFChars function" }(
+fun jstring.toKStringOrNull(env: JNIEnvVar): String? {
+    val data = env.pointed?.GetStringUTFChars?.invoke(
         env.ptr,
-        this@toKString,
+        this@toKStringOrNull,
+        null
+    )
+    val result = data?.toKString()
+    env.pointed?.ReleaseStringUTFChars?.invoke(
+        env.ptr,
+        this@toKStringOrNull,
         data
     )
     return result
 }
 
-fun String.toJString(env: JNIEnvVar): jstring {
+fun jstring.toKString(env: JNIEnvVar): String =
+    requireNotNull(toKStringOrNull(env)) { "Could not convert JVM to native string" }
+
+fun String.toJStringOrNull(env: JNIEnvVar): jstring? {
     return memScoped {
-        requireNotNull(
-            env.pointed?.NewStringUTF?.invoke(
-                env.ptr,
-                allocCString(this@toJString)
-            )
-        ) { "Could not allocate JVM string" }
+        env.pointed?.NewStringUTF?.invoke(
+            env.ptr,
+            allocCString(this@toJStringOrNull)
+        )
     }
 }
 
-fun jclass.findMethod(env: JNIEnvVar, descriptor: MethodDescriptor): jmethodID? {
+fun String.toJString(env: JNIEnvVar): jstring =
+    requireNotNull(toJStringOrNull(env)) { "Could not convert native to JVM string" }
+
+fun findClassOrNull(env: JNIEnvVar, name: ClassName): jclass? {
+    return memScoped {
+        env.pointed?.FindClass?.invoke(env.ptr, allocCString(name.jvmName))
+    }
+}
+
+fun findClass(env: JNIEnvVar, name: ClassName): jclass =
+    requireNotNull(findClassOrNull(env, name)) { "Could not find JVM class" }
+
+fun jclass.findMethodOrNull(env: JNIEnvVar, descriptor: MethodDescriptor): jmethodID? {
     return memScoped {
         if (descriptor.isStatic) env.pointed?.GetStaticMethodID?.invoke(
             env.ptr,
-            this@findMethod,
+            this@findMethodOrNull,
             allocCString(descriptor.name),
             allocCString(descriptor.jvmDescriptor)
         )
         else env.pointed?.GetMethodID?.invoke(
             env.ptr,
-            this@findMethod,
+            this@findMethodOrNull,
             allocCString(descriptor.name),
             allocCString(descriptor.jvmDescriptor)
         )
     }
 }
 
-fun jclass.findMethod(env: JNIEnvVar, descriptor: MethodDescriptorBuilder.() -> Unit): jmethodID? {
-    return findMethod(env, MethodDescriptor.create(descriptor))
+fun jclass.findMethodOrNull(
+    env: JNIEnvVar,
+    descriptor: MethodDescriptorBuilder.() -> Unit
+): jmethodID? {
+    return findMethodOrNull(env, MethodDescriptor.create(descriptor))
 }
 
-fun jclass.findField(env: JNIEnvVar, descriptor: FieldDescriptor): jfieldID? {
+fun jclass.findMethod(env: JNIEnvVar, descriptor: MethodDescriptor): jmethodID =
+    requireNotNull(findMethodOrNull(env, descriptor)) { "Could not find method" }
+
+fun jclass.findMethod(env: JNIEnvVar, descriptor: MethodDescriptorBuilder.() -> Unit): jmethodID =
+    requireNotNull(findMethodOrNull(env, descriptor)) { "Could not find method" }
+
+fun jclass.findFieldOrNull(env: JNIEnvVar, descriptor: FieldDescriptor): jfieldID? {
     return memScoped {
         if (descriptor.isStatic) env.pointed?.GetStaticFieldID?.invoke(
             env.ptr,
-            this@findField,
+            this@findFieldOrNull,
             allocCString(descriptor.name),
             allocCString(descriptor.jvmDescriptor)
         )
         else env.pointed?.GetFieldID?.invoke(
             env.ptr,
-            this@findField,
+            this@findFieldOrNull,
             allocCString(descriptor.name),
             allocCString(descriptor.jvmDescriptor)
         )
     }
 }
 
-fun jclass.findField(env: JNIEnvVar, descriptor: FieldDescriptorBuilder.() -> Unit): jfieldID? {
-    return findField(env, FieldDescriptor.create(descriptor))
+fun jclass.findFieldOrNull(
+    env: JNIEnvVar,
+    descriptor: FieldDescriptorBuilder.() -> Unit
+): jfieldID? {
+    return findFieldOrNull(env, FieldDescriptor.create(descriptor))
 }
+
+fun jclass.findField(env: JNIEnvVar, descriptor: FieldDescriptor): jfieldID =
+    requireNotNull(findFieldOrNull(env, descriptor)) { "Could not find field" }
+
+fun jclass.findField(env: JNIEnvVar, descriptor: FieldDescriptorBuilder.() -> Unit): jfieldID =
+    requireNotNull(findFieldOrNull(env, descriptor)) { "Could not find field" }
 
 inline operator fun <reified R> jmethodID.invoke(
     env: JNIEnvVar,

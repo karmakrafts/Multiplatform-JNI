@@ -30,10 +30,31 @@ value class JNIEnvScope(val env: JNIEnvVar) {
     fun jstring.toKString(): String = toKString(env)
     fun String.toJString(): jstring = toJString(env)
 
-    fun jclass.findField(descriptor: FieldDescriptor): jfieldID? =
+    fun findClassOrNull(name: ClassName): jclass? = findClassOrNull(env, name)
+    fun findClass(name: ClassName): jclass = findClass(env, name)
+
+    fun jclass.findFieldOrNull(descriptor: FieldDescriptor): jfieldID? =
+        findFieldOrNull(env, descriptor)
+
+    fun jclass.findFieldOrNull(descriptor: FieldDescriptorBuilder.() -> Unit): jfieldID? =
+        findFieldOrNull(env, descriptor)
+
+    fun jclass.findField(descriptor: FieldDescriptor): jfieldID =
         findField(env, descriptor)
 
-    fun jclass.findMethod(descriptor: MethodDescriptor): jmethodID? =
+    fun jclass.findField(descriptor: FieldDescriptorBuilder.() -> Unit): jfieldID =
+        findField(env, descriptor)
+
+    fun jclass.findMethodOrNull(descriptor: MethodDescriptor): jmethodID? =
+        findMethodOrNull(env, descriptor)
+
+    fun jclass.findMethodOrNull(descriptor: MethodDescriptorBuilder.() -> Unit): jmethodID? =
+        findMethodOrNull(env, descriptor)
+
+    fun jclass.findMethod(descriptor: MethodDescriptor): jmethodID =
+        findMethod(env, descriptor)
+
+    fun jclass.findMethod(descriptor: MethodDescriptorBuilder.() -> Unit): jmethodID =
         findMethod(env, descriptor)
 
     inline operator fun <reified R> jmethodID.invoke(instance: jobject, vararg args: Any?): R? {
