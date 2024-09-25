@@ -80,6 +80,14 @@ kotlin {
             }
         }
     }
+    sourceSets {
+        commonMain {
+            dependencies {
+                implementation(libs.stately.concurrency)
+                implementation(libs.stately.collections)
+            }
+        }
+    }
 }
 
 publishing {
