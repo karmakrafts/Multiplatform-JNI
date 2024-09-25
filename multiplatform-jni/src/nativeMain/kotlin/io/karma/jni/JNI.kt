@@ -129,6 +129,10 @@ fun jclass.findMethod(env: JNIEnvVar, descriptor: MethodDescriptor): jmethodID? 
     }
 }
 
+fun jclass.findMethod(env: JNIEnvVar, descriptor: MethodDescriptorBuilder.() -> Unit): jmethodID? {
+    return findMethod(env, MethodDescriptor.create(descriptor))
+}
+
 fun jclass.findField(env: JNIEnvVar, descriptor: FieldDescriptor): jfieldID? {
     return memScoped {
         if (descriptor.isStatic) env.pointed?.GetStaticFieldID?.invoke(
@@ -144,6 +148,10 @@ fun jclass.findField(env: JNIEnvVar, descriptor: FieldDescriptor): jfieldID? {
             allocCString(descriptor.jvmDescriptor)
         )
     }
+}
+
+fun jclass.findField(env: JNIEnvVar, descriptor: FieldDescriptorBuilder.() -> Unit): jfieldID? {
+    return findField(env, FieldDescriptor.create(descriptor))
 }
 
 inline operator fun <reified R> jmethodID.invoke(
