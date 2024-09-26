@@ -33,6 +33,11 @@ enum class TypeClass {
 interface Type {
     companion object {
         private val cache: ConcurrentMutableMap<String, ClassType> = ConcurrentMutableMap()
+        val CLASS: Type = get("java.lang.Class")
+        val OBJECT: Type = get("java.lang.Object")
+        val STRING: Type = get("java.lang.String")
+        val FIELD: Type = get("java.lang.reflect.Field")
+        val METHOD: Type = get("java.lang.reflect.Method")
 
         fun get(qualifiedName: String): Type = cache.getOrPut(qualifiedName) {
             ClassType(qualifiedName)

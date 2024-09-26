@@ -40,8 +40,8 @@ interface JvmObject {
         inline fun <reified T : JvmObject> JvmObject.cast(env: JNIEnvVar): T {
             return when (T::class) {
                 JvmObject::class, JvmObjectRef::class -> this
-                JvmString::class -> JvmString.fromUnchecked(cast(env, Type.get("java.lang.String")))
-                JvmClass::class -> JvmClass.fromUnchecked(cast(env, Type.get("java.lang.Class")))
+                JvmString::class -> JvmString.fromUnchecked(cast(env, Type.STRING))
+                JvmClass::class -> JvmClass.fromUnchecked(cast(env, Type.CLASS))
                 else -> throw IllegalArgumentException("Unsupported type conversion $this -> ${T::class}")
             } as T
         }
@@ -73,8 +73,8 @@ interface JvmObject {
         return JvmClass.find(env, type).let {
             it.findMethod(env) {
                 name = "cast"
-                returnType = Type.get("java.lang.Object")
-                parameterTypes += Type.get("java.lang.Object")
+                returnType = Type.OBJECT
+                parameterTypes += Type.OBJECT
             }.callObject(env, it) {
                 put(this@JvmObject)
             }
@@ -88,7 +88,7 @@ interface JvmObject {
             it.findMethod(env) {
                 name = "isInstance"
                 returnType = PrimitiveType.BOOLEAN
-                parameterTypes += Type.get("java.lang.Object")
+                parameterTypes += Type.OBJECT
             }.callBoolean(env, it) {
                 put(this@JvmObject)
             }
@@ -96,6 +96,15 @@ interface JvmObject {
     }
 
     fun isInstance(env: JNIEnvVar, clazz: JvmClass): Boolean = isInstance(env, clazz.getType(env))
+
+    fun toKString(env: JNIEnvVar): String = jniScoped(env) {
+        getTypeClass().findMethod {
+            name = "toString"
+            returnType = Type.STRING
+        }.callObject(this@JvmObject)
+            .cast<JvmString>()
+            .value ?: "null"
+    }
 }
 
 internal value class SimpleJvmObject(

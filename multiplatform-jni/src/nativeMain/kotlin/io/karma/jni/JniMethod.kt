@@ -351,7 +351,7 @@ class JvmMethod(
         )
 
     fun getVisibility(env: JNIEnvVar): JvmVisibility = jniScoped(env) {
-        JvmClass.find(Type.get("java.lang.reflect.Method")).let { methodClass ->
+        JvmClass.find(Type.METHOD).let { methodClass ->
             methodClass.findMethod {
                 name = "getModifiers"
                 returnType = PrimitiveType.INT

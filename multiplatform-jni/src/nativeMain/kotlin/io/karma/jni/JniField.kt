@@ -285,7 +285,7 @@ class JvmField(
         )
 
     fun getVisibility(env: JNIEnvVar): JvmVisibility = jniScoped(env) {
-        JvmClass.find(Type.get("java.lang.reflect.Field")).let { fieldClass ->
+        JvmClass.find(Type.FIELD).let { fieldClass ->
             fieldClass.findMethod {
                 name = "getModifiers"
                 returnType = PrimitiveType.INT

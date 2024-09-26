@@ -25,7 +25,6 @@ import kotlinx.cinterop.invoke
 import kotlinx.cinterop.memScoped
 import kotlinx.cinterop.pointed
 import kotlinx.cinterop.ptr
-import kotlinx.cinterop.reinterpret
 import kotlinx.cinterop.toKString
 
 fun jstring.toKStringOrNull(env: JNIEnvVar): String? {
@@ -58,16 +57,22 @@ fun String.toJStringOrNull(env: JNIEnvVar): jstring? {
 fun String.toJString(env: JNIEnvVar): jstring =
     requireNotNull(toJStringOrNull(env)) { "Could not convert native to JVM string" }
 
-value class JvmString internal constructor(
+value class JvmString private constructor(
     override val handle: jstring?
 ) : JvmObject {
     companion object {
-        fun fromHandle(handle: jstring?): JvmString = JvmString(handle)
-        fun fromUnchecked(obj: JvmObject): JvmString = fromHandle(obj.handle?.reinterpret())
+        val NULL: JvmString = JvmString(null)
+
+        fun fromHandle(handle: jstring?): JvmString {
+            return if (handle == null) NULL
+            else JvmString(handle)
+        }
+
+        fun fromUnchecked(obj: JvmObject): JvmString = fromHandle(obj.handle)
 
         fun of(env: JNIEnvVar, value: String): JvmString {
             return memScoped {
-                JvmString(env.pointed?.NewStringUTF?.invoke(env.ptr, allocCString(value)))
+                fromHandle(env.pointed?.NewStringUTF?.invoke(env.ptr, allocCString(value)))
             }
         }
     }

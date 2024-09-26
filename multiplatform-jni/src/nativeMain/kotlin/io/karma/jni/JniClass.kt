@@ -122,7 +122,7 @@ class JvmClass internal constructor(
     fun getType(env: JNIEnvVar): Type = jniScoped(env) {
         findMethod {
             name = "getName"
-            returnType = Type.get("java.lang.String")
+            returnType = Type.STRING
             callType = CallType.DIRECT
         }.callObject(this@JvmClass)
             .cast<JvmString>()
@@ -136,7 +136,7 @@ class JvmClass internal constructor(
         findMethod {
             name = "isAnnotationPresent"
             returnType = PrimitiveType.BOOLEAN
-            parameterTypes += Type.get("java.lang.Class")
+            parameterTypes += Type.CLASS
             callType = CallType.DIRECT
         }.callBoolean(this@JvmClass) {
             put(Companion.find(type))
@@ -148,7 +148,7 @@ class JvmClass internal constructor(
         findMethod {
             name = "getAnnotation"
             returnType = type
-            parameterTypes += Type.get("java.lang.Class")
+            parameterTypes += Type.CLASS
             callType = CallType.DIRECT
         }.callObject(this@JvmClass) {
             put(Companion.find(type))
