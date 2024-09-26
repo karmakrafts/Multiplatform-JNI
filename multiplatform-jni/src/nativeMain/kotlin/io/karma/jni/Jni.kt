@@ -27,3 +27,9 @@ import kotlinx.cinterop.convert
 fun jboolean.toKBoolean(): Boolean = this == JNI_TRUE.convert<jboolean>()
 fun Boolean.toJBoolean(): jboolean =
     if (this) JNI_TRUE.convert<jboolean>() else JNI_FALSE.convert<jboolean>()
+
+enum class JvmVisibility {
+    PUBLIC,
+    PROTECTED,
+    PRIVATE
+}

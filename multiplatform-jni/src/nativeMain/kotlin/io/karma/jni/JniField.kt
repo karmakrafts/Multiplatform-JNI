@@ -74,7 +74,7 @@ class JvmField(
 ) : FieldDescriptor by descriptor {
     // Getters
 
-    fun getByte(env: JNIEnvVar, instance: JvmObject = JvmNull): Byte {
+    fun getByte(env: JNIEnvVar, instance: JvmObject = JvmObject.NULL): Byte {
         if (descriptor.isStatic) {
             return env.pointed?.GetStaticByteField?.invoke(env.ptr, enclosingClass.handle, handle)
                 ?: 0
@@ -83,7 +83,7 @@ class JvmField(
         return env.pointed?.GetByteField?.invoke(env.ptr, instance.handle, handle) ?: 0
     }
 
-    fun getShort(env: JNIEnvVar, instance: JvmObject = JvmNull): Short {
+    fun getShort(env: JNIEnvVar, instance: JvmObject = JvmObject.NULL): Short {
         if (descriptor.isStatic) {
             return env.pointed?.GetStaticShortField?.invoke(env.ptr, enclosingClass.handle, handle)
                 ?: 0
@@ -92,7 +92,7 @@ class JvmField(
         return env.pointed?.GetShortField?.invoke(env.ptr, instance.handle, handle) ?: 0
     }
 
-    fun getInt(env: JNIEnvVar, instance: JvmObject = JvmNull): Int {
+    fun getInt(env: JNIEnvVar, instance: JvmObject = JvmObject.NULL): Int {
         if (descriptor.isStatic) {
             return env.pointed?.GetStaticIntField?.invoke(env.ptr, enclosingClass.handle, handle)
                 ?: 0
@@ -101,7 +101,7 @@ class JvmField(
         return env.pointed?.GetIntField?.invoke(env.ptr, instance.handle, handle) ?: 0
     }
 
-    fun getLong(env: JNIEnvVar, instance: JvmObject = JvmNull): Long {
+    fun getLong(env: JNIEnvVar, instance: JvmObject = JvmObject.NULL): Long {
         if (descriptor.isStatic) {
             return env.pointed?.GetStaticLongField?.invoke(env.ptr, enclosingClass.handle, handle)
                 ?: 0
@@ -110,7 +110,7 @@ class JvmField(
         return env.pointed?.GetLongField?.invoke(env.ptr, instance.handle, handle) ?: 0
     }
 
-    fun getFloat(env: JNIEnvVar, instance: JvmObject = JvmNull): Float {
+    fun getFloat(env: JNIEnvVar, instance: JvmObject = JvmObject.NULL): Float {
         if (descriptor.isStatic) {
             return env.pointed?.GetStaticFloatField?.invoke(env.ptr, enclosingClass.handle, handle)
                 ?: 0F
@@ -119,7 +119,7 @@ class JvmField(
         return env.pointed?.GetFloatField?.invoke(env.ptr, instance.handle, handle) ?: 0F
     }
 
-    fun getDouble(env: JNIEnvVar, instance: JvmObject = JvmNull): Double {
+    fun getDouble(env: JNIEnvVar, instance: JvmObject = JvmObject.NULL): Double {
         if (descriptor.isStatic) {
             return env.pointed?.GetStaticDoubleField?.invoke(env.ptr, enclosingClass.handle, handle)
                 ?: 0.0
@@ -128,7 +128,7 @@ class JvmField(
         return env.pointed?.GetDoubleField?.invoke(env.ptr, instance.handle, handle) ?: 0.0
     }
 
-    fun getBoolean(env: JNIEnvVar, instance: JvmObject = JvmNull): Boolean {
+    fun getBoolean(env: JNIEnvVar, instance: JvmObject = JvmObject.NULL): Boolean {
         if (descriptor.isStatic) {
             return env.pointed?.GetStaticBooleanField?.invoke(
                 env.ptr,
@@ -141,7 +141,7 @@ class JvmField(
             ?: false
     }
 
-    fun getObject(env: JNIEnvVar, instance: JvmObject = JvmNull): JvmObject {
+    fun getObject(env: JNIEnvVar, instance: JvmObject = JvmObject.NULL): JvmObject {
         if (descriptor.isStatic) {
             return JvmObject.fromHandle(
                 env.pointed?.GetStaticObjectField?.invoke(
@@ -162,7 +162,7 @@ class JvmField(
     }
 
     @Suppress("IMPLICIT_CAST_TO_ANY")
-    inline fun <reified R> get(env: JNIEnvVar, instance: JvmObject = JvmNull): R {
+    inline fun <reified R> get(env: JNIEnvVar, instance: JvmObject = JvmObject.NULL): R {
         return when (R::class) {
             Byte::class -> getByte(env, instance)
             Short::class -> getShort(env, instance)
@@ -178,7 +178,7 @@ class JvmField(
 
     // Setters
 
-    fun setByte(env: JNIEnvVar, value: Byte, instance: JvmObject = JvmNull) {
+    fun setByte(env: JNIEnvVar, value: Byte, instance: JvmObject = JvmObject.NULL) {
         if (descriptor.isStatic) {
             env.pointed?.SetStaticByteField?.invoke(env.ptr, enclosingClass.handle, handle, value)
             return
@@ -187,7 +187,7 @@ class JvmField(
         env.pointed?.SetByteField?.invoke(env.ptr, instance.handle, handle, value.convert())
     }
 
-    fun setShort(env: JNIEnvVar, value: Short, instance: JvmObject = JvmNull) {
+    fun setShort(env: JNIEnvVar, value: Short, instance: JvmObject = JvmObject.NULL) {
         if (descriptor.isStatic) {
             env.pointed?.SetStaticShortField?.invoke(env.ptr, enclosingClass.handle, handle, value)
             return
@@ -196,7 +196,7 @@ class JvmField(
         env.pointed?.SetShortField?.invoke(env.ptr, instance.handle, handle, value.convert())
     }
 
-    fun setInt(env: JNIEnvVar, value: Int, instance: JvmObject = JvmNull) {
+    fun setInt(env: JNIEnvVar, value: Int, instance: JvmObject = JvmObject.NULL) {
         if (descriptor.isStatic) {
             env.pointed?.SetStaticIntField?.invoke(env.ptr, enclosingClass.handle, handle, value)
             return
@@ -205,7 +205,7 @@ class JvmField(
         env.pointed?.SetIntField?.invoke(env.ptr, instance.handle, handle, value.convert())
     }
 
-    fun setLong(env: JNIEnvVar, value: Long, instance: JvmObject = JvmNull) {
+    fun setLong(env: JNIEnvVar, value: Long, instance: JvmObject = JvmObject.NULL) {
         if (descriptor.isStatic) {
             env.pointed?.SetStaticLongField?.invoke(env.ptr, enclosingClass.handle, handle, value)
             return
@@ -214,7 +214,7 @@ class JvmField(
         env.pointed?.SetLongField?.invoke(env.ptr, instance.handle, handle, value.convert())
     }
 
-    fun setFloat(env: JNIEnvVar, value: Float, instance: JvmObject = JvmNull) {
+    fun setFloat(env: JNIEnvVar, value: Float, instance: JvmObject = JvmObject.NULL) {
         if (descriptor.isStatic) {
             env.pointed?.SetStaticFloatField?.invoke(env.ptr, enclosingClass.handle, handle, value)
             return
@@ -223,7 +223,7 @@ class JvmField(
         env.pointed?.SetFloatField?.invoke(env.ptr, instance.handle, handle, value)
     }
 
-    fun setDouble(env: JNIEnvVar, value: Double, instance: JvmObject = JvmNull) {
+    fun setDouble(env: JNIEnvVar, value: Double, instance: JvmObject = JvmObject.NULL) {
         if (descriptor.isStatic) {
             env.pointed?.SetStaticDoubleField?.invoke(env.ptr, enclosingClass.handle, handle, value)
             return
@@ -232,7 +232,7 @@ class JvmField(
         env.pointed?.SetDoubleField?.invoke(env.ptr, instance.handle, handle, value)
     }
 
-    fun setBoolean(env: JNIEnvVar, value: Boolean, instance: JvmObject = JvmNull) {
+    fun setBoolean(env: JNIEnvVar, value: Boolean, instance: JvmObject = JvmObject.NULL) {
         if (descriptor.isStatic) {
             env.pointed?.SetStaticBooleanField?.invoke(
                 env.ptr,
@@ -246,7 +246,7 @@ class JvmField(
         env.pointed?.SetBooleanField?.invoke(env.ptr, instance.handle, handle, value.toJBoolean())
     }
 
-    fun setObject(env: JNIEnvVar, value: JvmObject, instance: JvmObject = JvmNull) {
+    fun setObject(env: JNIEnvVar, value: JvmObject, instance: JvmObject = JvmObject.NULL) {
         if (descriptor.isStatic) {
             env.pointed?.SetStaticObjectField?.invoke(
                 env.ptr,
@@ -260,7 +260,7 @@ class JvmField(
         env.pointed?.SetObjectField?.invoke(env.ptr, instance.handle, handle, value.handle)
     }
 
-    inline fun <reified R> set(env: JNIEnvVar, value: R, instance: JvmObject = JvmNull) {
+    inline fun <reified R> set(env: JNIEnvVar, value: R, instance: JvmObject = JvmObject.NULL) {
         when (R::class) {
             Byte::class -> setByte(env, value as Byte, instance)
             Short::class -> setShort(env, value as Short, instance)

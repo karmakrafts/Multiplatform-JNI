@@ -27,9 +27,22 @@ import kotlinx.cinterop.ptr
 
 interface JvmObject {
     companion object {
+        val NULL: JvmObjectRef = object : JvmObjectRef {
+            override val handle: jobject? = null
+            override fun delete(env: JNIEnvVar) {}
+        }
+
         fun fromHandle(handle: jobject?): JvmObject {
-            return if (handle == null) JvmNull
+            return if (handle == null) NULL
             else SimpleJvmObject(handle)
+        }
+
+        inline fun <reified T : JvmObject> JvmObject.cast(env: JNIEnvVar): T {
+            return when (T::class) {
+                JvmObject::class, JvmObjectRef::class -> this
+                JvmString::class -> this
+                else -> throw IllegalArgumentException("Unsupported type conversion $this -> ${T::class}")
+            } as T
         }
     }
 
@@ -38,18 +51,33 @@ interface JvmObject {
     fun isNull(): Boolean = handle == null
 
     fun createGlobalRef(env: JNIEnvVar): JvmObjectRef {
-        return if (handle == null) JvmNull
+        return if (handle == null) NULL
         else JvmGlobalRef(env.pointed?.NewGlobalRef?.invoke(env.ptr, handle))
     }
 
     fun createLocalRef(env: JNIEnvVar): JvmObjectRef {
-        return if (handle == null) JvmNull
+        return if (handle == null) NULL
         else JvmLocalRef(env.pointed?.NewLocalRef?.invoke(env.ptr, handle))
     }
 
     fun createWeakRef(env: JNIEnvVar): JvmObjectRef {
-        return if (handle == null) JvmNull
+        return if (handle == null) NULL
         else JvmWeakRef(env.pointed?.NewWeakGlobalRef?.invoke(env.ptr, handle))
+    }
+
+    fun getTypeClass(env: JNIEnvVar): JvmClass =
+        JvmClass.fromHandle(env.pointed?.GetObjectClass?.invoke(env.ptr, handle))
+
+    fun cast(env: JNIEnvVar, type: Type): JvmObject {
+        return JvmClass.find(env, type).let { clazz ->
+            clazz.findMethod(env) {
+                name = "cast"
+                returnType = Type.get("java.lang.Object")
+                parameterTypes += Type.get("java.lang.Object")
+            }.callObject(env, clazz) {
+                put(this@JvmObject)
+            }
+        }
     }
 }
 
@@ -59,11 +87,6 @@ internal value class SimpleJvmObject(
 
 interface JvmObjectRef : JvmObject {
     fun delete(env: JNIEnvVar)
-}
-
-object JvmNull : JvmObjectRef {
-    override val handle: jobject? = null
-    override fun delete(env: JNIEnvVar) {}
 }
 
 internal value class JvmGlobalRef(

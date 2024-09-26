@@ -19,6 +19,7 @@
 package io.karma.jni
 
 import co.touchlab.stately.collections.ConcurrentMutableMap
+import io.karma.jni.JvmObject.Companion.cast
 import jni.JNIEnvVar
 import jni.jclass
 import kotlinx.cinterop.ExperimentalForeignApi
@@ -26,49 +27,34 @@ import kotlinx.cinterop.invoke
 import kotlinx.cinterop.memScoped
 import kotlinx.cinterop.pointed
 import kotlinx.cinterop.ptr
-import kotlin.reflect.KClass
-
-interface ClassDescriptor {
-    val name: String
-    val jvmName: String
-
-    companion object {
-        fun fromJvmName(name: String): ClassDescriptor = SimpleClassDescriptor(name.split("/"))
-        fun fromName(name: String): ClassDescriptor = SimpleClassDescriptor(name.split("\\."))
-        fun of(type: KClass<*>): ClassDescriptor =
-            fromName(requireNotNull(type.qualifiedName) { "Could not get type name" })
-    }
-}
-
-internal data class SimpleClassDescriptor(val segments: List<String>) : ClassDescriptor {
-    override val jvmName: String by lazy { segments.joinToString { "/" } }
-    override val name: String by lazy { segments.joinToString { "." } }
-
-    override fun toString(): String = name
-}
 
 class JvmClass internal constructor(
-    val descriptor: ClassDescriptor,
-    val handle: jclass
-) : ClassDescriptor by descriptor {
+    override val handle: jclass?
+) : JvmObject {
     private val fields: ConcurrentMutableMap<FieldDescriptor, JvmField> = ConcurrentMutableMap()
     private val methods: ConcurrentMutableMap<MethodDescriptor, JvmMethod> = ConcurrentMutableMap()
 
     companion object {
-        private val cache: ConcurrentMutableMap<ClassDescriptor, JvmClass> = ConcurrentMutableMap()
+        val NULL: JvmClass = JvmClass(null)
+        private val cache: ConcurrentMutableMap<jclass, JvmClass> = ConcurrentMutableMap()
 
-        fun findOrNull(env: JNIEnvVar, descriptor: ClassDescriptor): JvmClass? {
-            if (descriptor in cache) return cache[descriptor]
+        fun fromHandle(handle: jclass?): JvmClass {
+            return if (handle == null) NULL
+            else cache.getOrPut(handle) { JvmClass(handle) }
+        }
+
+        fun findOrNull(env: JNIEnvVar, type: Type): JvmClass? {
             val handle = memScoped {
-                env.pointed?.FindClass?.invoke(env.ptr, allocCString(descriptor.jvmName))
+                env.pointed?.FindClass?.invoke(env.ptr, allocCString(type.jvmName))
             } ?: return null
-            return JvmClass(descriptor, handle).apply {
-                cache[descriptor] = this
+            return if (handle in cache) cache[handle]!!
+            else JvmClass(handle).apply {
+                cache[handle] = this
             }
         }
 
-        fun find(env: JNIEnvVar, descriptor: ClassDescriptor): JvmClass =
-            requireNotNull(findOrNull(env, descriptor)) { "Could not find class" }
+        fun find(env: JNIEnvVar, type: Type): JvmClass =
+            requireNotNull(findOrNull(env, type)) { "Could not find class" }
     }
 
     fun findFieldOrNull(env: JNIEnvVar, descriptor: FieldDescriptor): JvmField? {
@@ -104,7 +90,7 @@ class JvmClass internal constructor(
     fun findMethodOrNull(env: JNIEnvVar, descriptor: MethodDescriptor): JvmMethod? {
         if (descriptor in methods) return methods[descriptor]
         val handle = memScoped {
-            if (descriptor.isStatic) env.pointed?.GetStaticMethodID?.invoke(
+            if (descriptor.access == MethodAccess.STATIC) env.pointed?.GetStaticMethodID?.invoke(
                 env.ptr,
                 handle,
                 allocCString(descriptor.name),
@@ -130,4 +116,36 @@ class JvmClass internal constructor(
 
     fun findMethod(env: JNIEnvVar, closure: MethodDescriptorBuilder.() -> Unit): JvmMethod =
         findMethod(env, MethodDescriptor.create(closure))
+
+    fun getType(env: JNIEnvVar): Type { // @formatter:off
+        return findMethod(env) {
+            name = "getName"
+            returnType = Type.get("java.lang.String")
+        }.callObject(env, this)
+            .cast<JvmString>(env)
+            .get(env)
+            ?.let(Type::get)
+            ?: NullType
+    } // @formatter:on
+
+    fun hasAnnotation(env: JNIEnvVar, type: Type): Boolean {
+        require(type is ClassType) { "Annotation must be class type" }
+        return findMethod(env) {
+            name = "isAnnotationPresent"
+            returnType = PrimitiveType.BOOLEAN
+            parameterTypes += Type.get("java.lang.Class")
+        }.callBoolean(env, this) {
+            put(find(env, type))
+        }
+    }
+
+    fun getAnnotation(env: JNIEnvVar, type: Type): JvmObject {
+        require(type is ClassType) { "Annotation must be class type" }
+        return findMethod(env) {
+            name = "getAnnotation"
+            returnType = type
+        }.callObject(env, this) {
+            put(find(env, type))
+        }
+    }
 }

@@ -18,23 +18,36 @@
 
 package io.karma.jni
 
+import co.touchlab.stately.collections.ConcurrentMutableMap
 import kotlinx.cinterop.COpaquePointerVar
 import kotlinx.cinterop.ExperimentalForeignApi
 import kotlinx.cinterop.sizeOf
 import kotlin.reflect.KClass
 
+enum class TypeClass {
+    PRIMITIVE,
+    ARRAY,
+    OBJECT
+}
+
 interface Type {
     companion object {
-        fun fromName(qualifiedName: String): Type =
-            ClassType(ClassDescriptor.fromName(qualifiedName))
+        private val cache: ConcurrentMutableMap<String, ClassType> = ConcurrentMutableMap()
 
-        fun of(type: KClass<*>): Type = ClassType(ClassDescriptor.of(type))
+        fun get(qualifiedName: String): Type = cache.getOrPut(qualifiedName) {
+            ClassType(qualifiedName)
+        }
+
+        fun of(type: KClass<*>): Type =
+            get(requireNotNull(type.qualifiedName) { "Qualified type name must be specified" })
+
         inline fun <reified T> of(): Type = of(T::class)
     }
 
     val name: String
     val valueType: Type
     val size: Int
+    val typeClass: TypeClass
 
     val jvmDescriptor: String
     val jvmName: String
@@ -52,6 +65,7 @@ sealed class PrimitiveType private constructor(
     override val name: String = requireNotNull(type.qualifiedName)
     override val valueType: Type
         get() = this
+    override val typeClass: TypeClass = TypeClass.PRIMITIVE
 
     object VOID : PrimitiveType(Unit::class, 0, "java.lang.Void", "V")
     object BYTE : PrimitiveType(Byte::class, Byte.SIZE_BYTES, "java.lang.Byte", "B")
@@ -67,14 +81,23 @@ sealed class PrimitiveType private constructor(
     override fun toString(): String = name
 }
 
-class ClassType(
-    val descriptor: ClassDescriptor
+object NullType : Type {
+    override val name: String = "null"
+    override val valueType: Type = this
+    override val size: Int = 0
+    override val typeClass: TypeClass = TypeClass.OBJECT
+    override val jvmDescriptor: String = "null"
+}
+
+internal class ClassType(
+    override val name: String
 ) : Type {
     override val valueType: Type
         get() = this
-    override val name: String by lazy { descriptor.toString() }
     override val size: Int = sizeOf<COpaquePointerVar>().toInt()
-    override val jvmDescriptor: String = "L${descriptor.jvmName};"
+    override val jvmName: String = name.replace('.', '/')
+    override val jvmDescriptor: String = "L$jvmName;"
+    override val typeClass: TypeClass = TypeClass.OBJECT
 
     override fun equals(other: Any?): Boolean {
         return when (other) {
@@ -87,13 +110,14 @@ class ClassType(
     override fun toString(): String = name
 }
 
-class ArrayType(
+internal class ArrayType(
     override val valueType: Type,
     val dimensions: Int = 1
 ) : Type {
     override val name: String = "Array<${valueType.name}>"
     override val jvmDescriptor: String = "[${valueType.jvmDescriptor}"
     override val size: Int = valueType.size * dimensions
+    override val typeClass: TypeClass = TypeClass.ARRAY
 
     override fun equals(other: Any?): Boolean {
         return when (other) {
@@ -104,6 +128,7 @@ class ArrayType(
         }
     }
 
+    override fun array(dimensions: Int): Type = ArrayType(valueType, this.dimensions + dimensions)
     override fun hashCode(): Int = 31 * valueType.hashCode() + dimensions
     override fun toString(): String = name
 }

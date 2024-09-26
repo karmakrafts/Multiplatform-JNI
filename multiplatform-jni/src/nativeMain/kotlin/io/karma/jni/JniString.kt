@@ -56,3 +56,20 @@ fun String.toJStringOrNull(env: JNIEnvVar): jstring? {
 
 fun String.toJString(env: JNIEnvVar): jstring =
     requireNotNull(toJStringOrNull(env)) { "Could not convert native to JVM string" }
+
+value class JvmString internal constructor(
+    override val handle: jstring?
+) : JvmObject {
+    companion object {
+        fun fromHandle(handle: jstring?): JvmString = JvmString(handle)
+
+        fun of(env: JNIEnvVar, value: String): JvmString {
+            return memScoped {
+                JvmString(env.pointed?.NewStringUTF?.invoke(env.ptr, allocCString(value)))
+            }
+        }
+    }
+
+    fun get(env: JNIEnvVar): String? = handle?.toKStringOrNull(env)
+    fun getLength(env: JNIEnvVar): Int = env.pointed?.GetStringLength?.invoke(env.ptr, handle) ?: 0
+}

@@ -19,17 +19,8 @@
 package io.karma.jni
 
 import jni.JNIEnvVar
-import jni.jbooleanVar
-import jni.jbyteVar
-import jni.jdoubleVar
-import jni.jfloatVar
-import jni.jintVar
-import jni.jlongVar
 import jni.jmethodID
-import jni.jobjectVar
-import jni.jshortVar
 import jni.jvalue
-import kotlinx.cinterop.COpaquePointerVar
 import kotlinx.cinterop.CPointer
 import kotlinx.cinterop.ExperimentalForeignApi
 import kotlinx.cinterop.MemScope
@@ -40,8 +31,13 @@ import kotlinx.cinterop.invoke
 import kotlinx.cinterop.memScoped
 import kotlinx.cinterop.pointed
 import kotlinx.cinterop.ptr
-import kotlinx.cinterop.set
 import kotlinx.cinterop.sizeOf
+
+enum class MethodAccess {
+    STATIC,
+    VIRTUAL,
+    DIRECT
+}
 
 interface MethodDescriptor {
     companion object {
@@ -53,17 +49,15 @@ interface MethodDescriptor {
     val name: String
     val returnType: Type
     val parameterTypes: List<Type>
-    val isStatic: Boolean
+    val access: MethodAccess
     val jvmDescriptor: String
-
-    fun getParametersSize(): Int = parameterTypes.sumOf { it.size }
 }
 
 internal data class SimpleMethodDescriptor(
     override val name: String,
     override val returnType: Type,
     override val parameterTypes: List<Type>,
-    override val isStatic: Boolean,
+    override val access: MethodAccess,
 ) : MethodDescriptor {
     override val jvmDescriptor: String by lazy {
         StringBuilder().let {
@@ -79,19 +73,19 @@ internal data class SimpleMethodDescriptor(
 class MethodDescriptorBuilder internal constructor() {
     var name: String = ""
     var returnType: Type = PrimitiveType.VOID
-    var isStatic: Boolean = false
+    var access: MethodAccess = MethodAccess.VIRTUAL
     val parameterTypes: ArrayList<Type> = ArrayList()
 
     fun setFrom(descriptor: MethodDescriptor) {
         name = descriptor.name
         returnType = descriptor.returnType
-        isStatic = descriptor.isStatic
+        access = descriptor.access
         parameterTypes += descriptor.parameterTypes
     }
 
     internal fun build(): SimpleMethodDescriptor {
         require(name.isNotBlank()) { "Method name must be specified" }
-        return SimpleMethodDescriptor(name, returnType, parameterTypes, isStatic)
+        return SimpleMethodDescriptor(name, returnType, parameterTypes, access)
     }
 }
 
@@ -99,46 +93,56 @@ class ArgumentScope(
     val address: NativePointed,
     private val descriptor: MethodDescriptor,
 ) {
-    private var offset: Long = 0
+    private var index: Int = 0
 
     fun put(value: Byte) {
-        interpretCPointer<jbyteVar>(address.rawPtr + offset)?.set(0, value)
-        offset += Byte.SIZE_BYTES
+        require(descriptor.parameterTypes[index] == PrimitiveType.BYTE) { "Parameter type mismatch" }
+        interpretCPointer<jvalue>(address.rawPtr + index * sizeOf<jvalue>())?.pointed?.b = value
+        index++
     }
 
     fun put(value: Short) {
-        interpretCPointer<jshortVar>(address.rawPtr + offset)?.set(0, value)
-        offset += Short.SIZE_BYTES
+        require(descriptor.parameterTypes[index] == PrimitiveType.SHORT) { "Parameter type mismatch" }
+        interpretCPointer<jvalue>(address.rawPtr + index * sizeOf<jvalue>())?.pointed?.s = value
+        index++
     }
 
     fun put(value: Int) {
-        interpretCPointer<jintVar>(address.rawPtr + offset)?.set(0, value)
-        offset += Int.SIZE_BYTES
+        require(descriptor.parameterTypes[index] == PrimitiveType.INT) { "Parameter type mismatch" }
+        interpretCPointer<jvalue>(address.rawPtr + index * sizeOf<jvalue>())?.pointed?.i = value
+        index++
     }
 
     fun put(value: Long) {
-        interpretCPointer<jlongVar>(address.rawPtr + offset)?.set(0, value)
-        offset += Long.SIZE_BYTES
+        require(descriptor.parameterTypes[index] == PrimitiveType.LONG) { "Parameter type mismatch" }
+        interpretCPointer<jvalue>(address.rawPtr + index * sizeOf<jvalue>())?.pointed?.j = value
+        index++
     }
 
     fun put(value: Float) {
-        interpretCPointer<jfloatVar>(address.rawPtr + offset)?.set(0, value)
-        offset += Float.SIZE_BYTES
+        require(descriptor.parameterTypes[index] == PrimitiveType.FLOAT) { "Parameter type mismatch" }
+        interpretCPointer<jvalue>(address.rawPtr + index * sizeOf<jvalue>())?.pointed?.f = value
+        index++
     }
 
     fun put(value: Double) {
-        interpretCPointer<jdoubleVar>(address.rawPtr + offset)?.set(0, value)
-        offset += Double.SIZE_BYTES
+        require(descriptor.parameterTypes[index] == PrimitiveType.DOUBLE) { "Parameter type mismatch" }
+        interpretCPointer<jvalue>(address.rawPtr + index * sizeOf<jvalue>())?.pointed?.d = value
+        index++
     }
 
     fun put(value: Boolean) {
-        interpretCPointer<jbooleanVar>(address.rawPtr + offset)?.set(0, value.toJBoolean())
-        offset += Byte.SIZE_BYTES
+        require(descriptor.parameterTypes[index] == PrimitiveType.BOOLEAN) { "Parameter type mismatch" }
+        interpretCPointer<jvalue>(address.rawPtr + index * sizeOf<jvalue>())?.pointed?.z =
+            value.toJBoolean()
+        index++
     }
 
     fun put(value: JvmObject) {
-        interpretCPointer<jobjectVar>(address.rawPtr + offset)?.set(0, value.handle)
-        offset += sizeOf<COpaquePointerVar>()
+        require(descriptor.parameterTypes[index] !is PrimitiveType) { "Parameter type mismatch" }
+        interpretCPointer<jvalue>(address.rawPtr + index * sizeOf<jvalue>())?.pointed?.l =
+            value.handle
+        index++
     }
 }
 
@@ -150,7 +154,7 @@ class JvmMethod(
     inline fun MemScope.allocArgs(closure: ArgumentScope.() -> Unit): CPointer<jvalue>? {
         return interpretCPointer(
             ArgumentScope(
-                alloc(descriptor.getParametersSize()),
+                alloc(sizeOf<jvalue>() * descriptor.parameterTypes.size),
                 descriptor
             ).apply(closure).address.rawPtr
         )
@@ -158,179 +162,170 @@ class JvmMethod(
 
     inline fun callByte(
         env: JNIEnvVar,
-        instance: JvmObject = JvmNull,
-        args: ArgumentScope.() -> Unit
+        instance: JvmObject = JvmObject.NULL,
+        args: ArgumentScope.() -> Unit = {}
     ): Byte {
         return memScoped {
-            if (descriptor.isStatic) env.pointed?.CallStaticByteMethodA?.invoke(
-                env.ptr,
-                enclosingClass.handle,
-                handle,
-                allocArgs(args)
-            ) ?: 0
-            else env.pointed?.CallByteMethodA?.invoke(
-                env.ptr,
-                instance.handle,
-                handle,
-                allocArgs(args)
-            ) ?: 0
+            when (descriptor.access) { // @formatter:off
+                MethodAccess.STATIC -> env.pointed?.CallStaticByteMethodA?.invoke(
+                    env.ptr, enclosingClass.handle, handle, allocArgs(args)
+                )
+                MethodAccess.VIRTUAL -> env.pointed?.CallByteMethodA?.invoke(
+                    env.ptr, instance.handle, handle, allocArgs(args)
+                )
+                MethodAccess.DIRECT -> env.pointed?.CallNonvirtualByteMethodA?.invoke(
+                    env.ptr, instance.handle, enclosingClass.handle, handle, allocArgs(args)
+                )
+            } ?: 0 // @formatter:on
         }
     }
 
     inline fun callShort(
         env: JNIEnvVar,
-        instance: JvmObject = JvmNull,
-        args: ArgumentScope.() -> Unit
+        instance: JvmObject = JvmObject.NULL,
+        args: ArgumentScope.() -> Unit = {}
     ): Short {
         return memScoped {
-            if (descriptor.isStatic) env.pointed?.CallStaticShortMethodA?.invoke(
-                env.ptr,
-                enclosingClass.handle,
-                handle,
-                allocArgs(args)
-            ) ?: 0
-            else env.pointed?.CallShortMethodA?.invoke(
-                env.ptr,
-                instance.handle,
-                handle,
-                allocArgs(args)
-            ) ?: 0
+            when (descriptor.access) { // @formatter:off
+                MethodAccess.STATIC -> env.pointed?.CallStaticShortMethodA?.invoke(
+                    env.ptr, enclosingClass.handle, handle, allocArgs(args)
+                )
+                MethodAccess.VIRTUAL -> env.pointed?.CallShortMethodA?.invoke(
+                    env.ptr, instance.handle, handle, allocArgs(args)
+                )
+                MethodAccess.DIRECT -> env.pointed?.CallNonvirtualShortMethodA?.invoke(
+                    env.ptr, instance.handle, enclosingClass.handle, handle, allocArgs(args)
+                )
+            } ?: 0 // @formatter:on
         }
     }
 
     inline fun callInt(
         env: JNIEnvVar,
-        instance: JvmObject = JvmNull,
-        args: ArgumentScope.() -> Unit
+        instance: JvmObject = JvmObject.NULL,
+        args: ArgumentScope.() -> Unit = {}
     ): Int {
         return memScoped {
-            if (descriptor.isStatic) env.pointed?.CallStaticIntMethodA?.invoke(
-                env.ptr,
-                enclosingClass.handle,
-                handle,
-                allocArgs(args)
-            ) ?: 0
-            else env.pointed?.CallIntMethodA?.invoke(
-                env.ptr,
-                instance.handle,
-                handle,
-                allocArgs(args)
-            ) ?: 0
+            when (descriptor.access) { // @formatter:off
+                MethodAccess.STATIC -> env.pointed?.CallStaticIntMethodA?.invoke(
+                    env.ptr, enclosingClass.handle, handle, allocArgs(args)
+                )
+                MethodAccess.VIRTUAL -> env.pointed?.CallIntMethodA?.invoke(
+                    env.ptr, instance.handle, handle, allocArgs(args)
+                )
+                MethodAccess.DIRECT -> env.pointed?.CallNonvirtualIntMethodA?.invoke(
+                    env.ptr, instance.handle, enclosingClass.handle, handle, allocArgs(args)
+                )
+            } ?: 0 // @formatter:on
         }
     }
 
     inline fun callLong(
         env: JNIEnvVar,
-        instance: JvmObject = JvmNull,
-        args: ArgumentScope.() -> Unit
+        instance: JvmObject = JvmObject.NULL,
+        args: ArgumentScope.() -> Unit = {}
     ): Long {
         return memScoped {
-            if (descriptor.isStatic) env.pointed?.CallStaticLongMethodA?.invoke(
-                env.ptr,
-                enclosingClass.handle,
-                handle,
-                allocArgs(args)
-            ) ?: 0
-            else env.pointed?.CallLongMethodA?.invoke(
-                env.ptr,
-                instance.handle,
-                handle,
-                allocArgs(args)
-            ) ?: 0
+            when (descriptor.access) { // @formatter:off
+                MethodAccess.STATIC -> env.pointed?.CallStaticLongMethodA?.invoke(
+                    env.ptr, enclosingClass.handle, handle, allocArgs(args)
+                )
+                MethodAccess.VIRTUAL -> env.pointed?.CallLongMethodA?.invoke(
+                    env.ptr, instance.handle, handle, allocArgs(args)
+                )
+                MethodAccess.DIRECT -> env.pointed?.CallNonvirtualLongMethodA?.invoke(
+                    env.ptr, instance.handle, enclosingClass.handle, handle, allocArgs(args)
+                )
+            } ?: 0 // @formatter:on
         }
     }
 
     inline fun callFloat(
         env: JNIEnvVar,
-        instance: JvmObject = JvmNull,
-        args: ArgumentScope.() -> Unit
+        instance: JvmObject = JvmObject.NULL,
+        args: ArgumentScope.() -> Unit = {}
     ): Float {
         return memScoped {
-            if (descriptor.isStatic) env.pointed?.CallStaticFloatMethodA?.invoke(
-                env.ptr,
-                enclosingClass.handle,
-                handle,
-                allocArgs(args)
-            ) ?: 0F
-            else env.pointed?.CallFloatMethodA?.invoke(
-                env.ptr,
-                instance.handle,
-                handle,
-                allocArgs(args)
-            ) ?: 0F
+            when (descriptor.access) { // @formatter:off
+                MethodAccess.STATIC -> env.pointed?.CallStaticFloatMethodA?.invoke(
+                    env.ptr, enclosingClass.handle, handle, allocArgs(args)
+                )
+                MethodAccess.VIRTUAL -> env.pointed?.CallFloatMethodA?.invoke(
+                    env.ptr, instance.handle, handle, allocArgs(args)
+                )
+                MethodAccess.DIRECT -> env.pointed?.CallNonvirtualFloatMethodA?.invoke(
+                    env.ptr, instance.handle, enclosingClass.handle, handle, allocArgs(args)
+                )
+            } ?: 0F // @formatter:on
         }
     }
 
     inline fun callDouble(
         env: JNIEnvVar,
-        instance: JvmObject = JvmNull,
-        args: ArgumentScope.() -> Unit
+        instance: JvmObject = JvmObject.NULL,
+        args: ArgumentScope.() -> Unit = {}
     ): Double {
         return memScoped {
-            if (descriptor.isStatic) env.pointed?.CallStaticDoubleMethodA?.invoke(
-                env.ptr,
-                enclosingClass.handle,
-                handle,
-                allocArgs(args)
-            ) ?: 0.0
-            else env.pointed?.CallDoubleMethodA?.invoke(
-                env.ptr,
-                instance.handle,
-                handle,
-                allocArgs(args)
-            ) ?: 0.0
+            when (descriptor.access) { // @formatter:off
+                MethodAccess.STATIC -> env.pointed?.CallStaticDoubleMethodA?.invoke(
+                    env.ptr, enclosingClass.handle, handle, allocArgs(args)
+                )
+                MethodAccess.VIRTUAL -> env.pointed?.CallDoubleMethodA?.invoke(
+                    env.ptr, instance.handle, handle, allocArgs(args)
+                )
+                MethodAccess.DIRECT -> env.pointed?.CallNonvirtualDoubleMethodA?.invoke(
+                    env.ptr, instance.handle, enclosingClass.handle, handle, allocArgs(args)
+                )
+            } ?: 0.0 // @formatter:on
         }
     }
 
     inline fun callBoolean(
         env: JNIEnvVar,
-        instance: JvmObject = JvmNull,
-        args: ArgumentScope.() -> Unit
+        instance: JvmObject = JvmObject.NULL,
+        args: ArgumentScope.() -> Unit = {}
     ): Boolean {
         return memScoped {
-            if (descriptor.isStatic) env.pointed?.CallStaticBooleanMethodA?.invoke(
-                env.ptr,
-                enclosingClass.handle,
-                handle,
-                allocArgs(args)
-            )?.toKBoolean() ?: false
-            else env.pointed?.CallBooleanMethodA?.invoke(
-                env.ptr,
-                instance.handle,
-                handle,
-                allocArgs(args)
-            )?.toKBoolean() ?: false
+            when (descriptor.access) { // @formatter:off
+                MethodAccess.STATIC -> env.pointed?.CallStaticBooleanMethodA?.invoke(
+                    env.ptr, enclosingClass.handle, handle, allocArgs(args)
+                )
+                MethodAccess.VIRTUAL -> env.pointed?.CallBooleanMethodA?.invoke(
+                    env.ptr, instance.handle, handle, allocArgs(args)
+                )
+                MethodAccess.DIRECT -> env.pointed?.CallNonvirtualBooleanMethodA?.invoke(
+                    env.ptr, instance.handle, enclosingClass.handle, handle, allocArgs(args)
+                )
+            }?.toKBoolean() ?: false // @formatter:on
         }
     }
 
     inline fun callObject(
         env: JNIEnvVar,
-        instance: JvmObject = JvmNull,
-        args: ArgumentScope.() -> Unit
+        instance: JvmObject = JvmObject.NULL,
+        args: ArgumentScope.() -> Unit = {}
     ): JvmObject {
         return memScoped {
-            JvmObject.fromHandle(
-                if (descriptor.isStatic) env.pointed?.CallStaticObjectMethodA?.invoke(
-                    env.ptr,
-                    enclosingClass.handle,
-                    handle,
-                    allocArgs(args)
+            JvmObject.fromHandle(when (descriptor.access) { // @formatter:off
+                MethodAccess.STATIC -> env.pointed?.CallStaticObjectMethodA?.invoke(
+                    env.ptr, enclosingClass.handle, handle, allocArgs(args)
                 )
-                else env.pointed?.CallObjectMethodA?.invoke(
-                    env.ptr,
-                    instance.handle,
-                    handle,
-                    allocArgs(args)
+                MethodAccess.VIRTUAL -> env.pointed?.CallObjectMethodA?.invoke(
+                    env.ptr, instance.handle, handle, allocArgs(args)
                 )
-            )
+                MethodAccess.DIRECT -> env.pointed?.CallNonvirtualObjectMethodA?.invoke(
+                    env.ptr, instance.handle, enclosingClass.handle, handle, allocArgs(args)
+                )
+            }
+            ) // @formatter:on
         }
     }
 
     @Suppress("IMPLICIT_CAST_TO_ANY")
     inline fun <reified R> call(
         env: JNIEnvVar,
-        instance: JvmObject = JvmNull,
-        closure: ArgumentScope.() -> Unit
+        instance: JvmObject = JvmObject.NULL,
+        closure: ArgumentScope.() -> Unit = {}
     ): R {
         return when (R::class) {
             Byte::class -> callByte(env, instance, closure)
