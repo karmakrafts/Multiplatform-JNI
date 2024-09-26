@@ -18,6 +18,10 @@ import java.util.Properties
 import kotlin.io.path.div
 import kotlin.io.path.inputStream
 
+plugins {
+    alias(libs.plugins.dokka)
+}
+
 val buildConfig: Properties = Properties().apply {
     (rootDir.toPath() / "build.properties").inputStream().use {
         load(it)

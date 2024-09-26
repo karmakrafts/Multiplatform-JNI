@@ -19,6 +19,7 @@ import kotlin.io.path.div
 
 plugins {
     alias(libs.plugins.kotlin.multiplatform)
+    alias(libs.plugins.dokka)
     `maven-publish`
 }
 
@@ -90,6 +91,23 @@ kotlin {
     }
 }
 
+tasks {
+    dokkaHtml {
+        dokkaSourceSets.configureEach {
+            reportUndocumented = false
+            jdkVersion = java.toolchain.languageVersion.get().asInt()
+            noAndroidSdkLink = true
+            externalDocumentationLink("https://docs.karmakrafts.dev/multiplatform-jni")
+        }
+    }
+}
+
+val dokkaJar by tasks.registering(Jar::class) {
+    dependsOn(tasks.dokkaHtml)
+    from(tasks.dokkaHtml.flatMap { it.outputDirectory })
+    archiveClassifier.set("javadoc")
+}
+
 publishing {
     System.getenv("CI_API_V4_URL")?.let { apiUrl ->
         repositories {
@@ -115,11 +133,12 @@ publishing {
     }
     publications.configureEach {
         if (this is MavenPublication) {
+            artifact(dokkaJar)
             pom {
                 name = project.name
                 description =
                     "Multiplatform bindings for the native JNI API on Linux, Windows and macOS."
-                url = "https://git.karmakrafts.dev/kk/ferrous-project/multiplatform-jni"
+                url = "https://git.karmakrafts.dev/kk/multiplatform-jni"
                 licenses {
                     license {
                         name = "Apache License 2.0"
@@ -134,7 +153,7 @@ publishing {
                     }
                 }
                 scm {
-                    url = "https://git.karmakrafts.dev/kk/ferrous-project/multiplatform-jni"
+                    url = "https://git.karmakrafts.dev/kk/multiplatform-jni"
                 }
             }
         }

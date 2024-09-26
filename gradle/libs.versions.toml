@@ -10,6 +10,8 @@ androidCompileSdk = "34"
 core = "1.13.1"
 stately = "2.1.0"
 
+dokka = "1.9.20" # https://github.com/Kotlin/dokka/releases"
+
 [libraries]
 kotlin-test = { group = "org.jetbrains.kotlin", name = "kotlin-test", version.ref = "kotlin" }
 kotlinx-coroutines = { group = "org.jetbrains.kotlinx", name = "kotlinx-coroutines-core", version.ref = "kotlinxCoroutines" }
@@ -20,3 +22,4 @@ stately-collections = { group = "co.touchlab", name = "stately-concurrent-collec
 [plugins]
 kotlin-multiplatform = { id = "org.jetbrains.kotlin.multiplatform", version.ref = "kotlin" }
 androidLibrary = { id = "com.android.library", version.ref = "agp" }
+dokka = { id = "org.jetbrains.dokka", version.ref = "dokka" }
