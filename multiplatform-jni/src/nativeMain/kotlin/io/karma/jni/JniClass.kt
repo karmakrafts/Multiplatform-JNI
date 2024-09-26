@@ -27,6 +27,7 @@ import kotlinx.cinterop.invoke
 import kotlinx.cinterop.memScoped
 import kotlinx.cinterop.pointed
 import kotlinx.cinterop.ptr
+import kotlinx.cinterop.reinterpret
 
 class JvmClass internal constructor(
     override val handle: jclass?
@@ -42,6 +43,8 @@ class JvmClass internal constructor(
             return if (handle == null) NULL
             else cache.getOrPut(handle) { JvmClass(handle) }
         }
+
+        fun fromUnchecked(obj: JvmObject): JvmClass = fromHandle(obj.handle?.reinterpret())
 
         fun findOrNull(env: JNIEnvVar, type: Type): JvmClass? {
             val handle = memScoped {

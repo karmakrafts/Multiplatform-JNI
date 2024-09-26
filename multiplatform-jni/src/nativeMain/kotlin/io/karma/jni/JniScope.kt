@@ -18,6 +18,7 @@
 
 package io.karma.jni
 
+import io.karma.jni.JvmObject.Companion.cast
 import jni.JNIEnvVar
 import jni.jstring
 import kotlinx.cinterop.ExperimentalForeignApi
@@ -63,16 +64,27 @@ value class JniScope(val env: JNIEnvVar) {
     fun JvmField.getLong(instance: JvmObject = JvmObject.NULL): Long = getLong(env, instance)
     fun JvmField.getFloat(instance: JvmObject = JvmObject.NULL): Float = getFloat(env, instance)
     fun JvmField.getDouble(instance: JvmObject = JvmObject.NULL): Double = getDouble(env, instance)
-    fun JvmField.getBoolean(instance: JvmObject = JvmObject.NULL): Boolean = getBoolean(env, instance)
-    fun JvmField.getObject(instance: JvmObject = JvmObject.NULL): JvmObject = getObject(env, instance)
-    inline fun <reified R> JvmField.get(instance: JvmObject = JvmObject.NULL): R = get<R>(env, instance)
+    fun JvmField.getBoolean(instance: JvmObject = JvmObject.NULL): Boolean =
+        getBoolean(env, instance)
 
-    fun JvmField.setByte(value: Byte, instance: JvmObject = JvmObject.NULL) = setByte(env, value, instance)
+    fun JvmField.getObject(instance: JvmObject = JvmObject.NULL): JvmObject =
+        getObject(env, instance)
+
+    inline fun <reified R> JvmField.get(instance: JvmObject = JvmObject.NULL): R =
+        get<R>(env, instance)
+
+    fun JvmField.setByte(value: Byte, instance: JvmObject = JvmObject.NULL) =
+        setByte(env, value, instance)
+
     fun JvmField.setShort(value: Short, instance: JvmObject = JvmObject.NULL) =
         setShort(env, value, instance)
 
-    fun JvmField.setInt(value: Int, instance: JvmObject = JvmObject.NULL) = setInt(env, value, instance)
-    fun JvmField.setLong(value: Long, instance: JvmObject = JvmObject.NULL) = setLong(env, value, instance)
+    fun JvmField.setInt(value: Int, instance: JvmObject = JvmObject.NULL) =
+        setInt(env, value, instance)
+
+    fun JvmField.setLong(value: Long, instance: JvmObject = JvmObject.NULL) =
+        setLong(env, value, instance)
+
     fun JvmField.setFloat(value: Float, instance: JvmObject = JvmObject.NULL) =
         setFloat(env, value, instance)
 
@@ -88,7 +100,10 @@ value class JniScope(val env: JNIEnvVar) {
     inline fun <reified R> JvmField.set(value: R, instance: JvmObject = JvmObject.NULL) =
         set<R>(env, value, instance)
 
-    fun JvmMethod.callByte(instance: JvmObject = JvmObject.NULL, closure: ArgumentScope.() -> Unit): Byte =
+    fun JvmMethod.callByte(
+        instance: JvmObject = JvmObject.NULL,
+        closure: ArgumentScope.() -> Unit
+    ): Byte =
         callByte(env, instance, closure)
 
     fun JvmMethod.callShort(
@@ -97,10 +112,16 @@ value class JniScope(val env: JNIEnvVar) {
     ): Short =
         callShort(env, instance, closure)
 
-    fun JvmMethod.callInt(instance: JvmObject = JvmObject.NULL, closure: ArgumentScope.() -> Unit): Int =
+    fun JvmMethod.callInt(
+        instance: JvmObject = JvmObject.NULL,
+        closure: ArgumentScope.() -> Unit
+    ): Int =
         callInt(env, instance, closure)
 
-    fun JvmMethod.callLong(instance: JvmObject = JvmObject.NULL, closure: ArgumentScope.() -> Unit): Long =
+    fun JvmMethod.callLong(
+        instance: JvmObject = JvmObject.NULL,
+        closure: ArgumentScope.() -> Unit
+    ): Long =
         callLong(env, instance, closure)
 
     fun JvmMethod.callFloat(
@@ -135,7 +156,10 @@ value class JniScope(val env: JNIEnvVar) {
     fun JvmObject.createWeakRef(): JvmObjectRef = createWeakRef(env)
     fun JvmObject.getTypeClass(): JvmClass = getTypeClass(env)
     fun JvmObject.cast(type: Type): JvmObject = cast(env, type)
+    fun JvmObject.isInstance(type: Type): Boolean = isInstance(env, type)
     fun JvmObjectRef.delete() = delete(env)
+
+    inline fun <reified T : JvmObject> JvmObject.cast(): T = cast<T>(env)
 
     fun JvmString.Companion.of(value: String): JvmString = of(env, value)
     fun JvmString.get(): String? = get(env)

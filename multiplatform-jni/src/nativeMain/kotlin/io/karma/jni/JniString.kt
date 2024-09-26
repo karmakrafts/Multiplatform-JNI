@@ -25,6 +25,7 @@ import kotlinx.cinterop.invoke
 import kotlinx.cinterop.memScoped
 import kotlinx.cinterop.pointed
 import kotlinx.cinterop.ptr
+import kotlinx.cinterop.reinterpret
 import kotlinx.cinterop.toKString
 
 fun jstring.toKStringOrNull(env: JNIEnvVar): String? {
@@ -62,6 +63,7 @@ value class JvmString internal constructor(
 ) : JvmObject {
     companion object {
         fun fromHandle(handle: jstring?): JvmString = JvmString(handle)
+        fun fromUnchecked(obj: JvmObject): JvmString = fromHandle(obj.handle?.reinterpret())
 
         fun of(env: JNIEnvVar, value: String): JvmString {
             return memScoped {

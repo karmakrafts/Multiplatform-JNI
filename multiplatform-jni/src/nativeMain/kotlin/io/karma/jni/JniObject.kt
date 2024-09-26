@@ -40,7 +40,8 @@ interface JvmObject {
         inline fun <reified T : JvmObject> JvmObject.cast(env: JNIEnvVar): T {
             return when (T::class) {
                 JvmObject::class, JvmObjectRef::class -> this
-                JvmString::class -> this
+                JvmString::class -> JvmString.fromUnchecked(cast(env, Type.get("java.lang.String")))
+                JvmClass::class -> JvmClass.fromUnchecked(cast(env, Type.get("java.lang.Class")))
                 else -> throw IllegalArgumentException("Unsupported type conversion $this -> ${T::class}")
             } as T
         }
@@ -75,6 +76,18 @@ interface JvmObject {
                 returnType = Type.get("java.lang.Object")
                 parameterTypes += Type.get("java.lang.Object")
             }.callObject(env, clazz) {
+                put(this@JvmObject)
+            }
+        }
+    }
+
+    fun isInstance(env: JNIEnvVar, type: Type): Boolean {
+        return JvmClass.find(env, type).let { clazz ->
+            clazz.findMethod(env) {
+                name = "isInstance"
+                returnType = PrimitiveType.BOOLEAN
+                parameterTypes += Type.get("java.lang.Object")
+            }.callBoolean(env, clazz) {
                 put(this@JvmObject)
             }
         }
