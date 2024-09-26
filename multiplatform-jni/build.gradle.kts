@@ -99,7 +99,7 @@ val dokkaJar by tasks.registering(Jar::class) {
 
 tasks {
     dokkaHtml {
-        dokkaSourceSets.configureEach {
+        dokkaSourceSets.create("main") {
             reportUndocumented = false
             jdkVersion = java.toolchain.languageVersion.get().asInt()
             noAndroidSdkLink = true
