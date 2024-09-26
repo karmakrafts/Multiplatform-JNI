@@ -1,7 +1,6 @@
 [versions]
 multiplatformJni = "1.1.0"
 
-jvmTarget = "17"
 agp = "8.4.2"
 kotlin = "2.0.10"
 kotlinxCoroutines = "1.9.0"

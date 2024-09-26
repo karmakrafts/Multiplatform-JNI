@@ -23,6 +23,14 @@ plugins {
     `maven-publish`
 }
 
+java {
+    toolchain {
+        languageVersion = JavaLanguageVersion.of(17)
+    }
+    sourceCompatibility = JavaVersion.VERSION_17
+    targetCompatibility = JavaVersion.VERSION_17
+}
+
 val jniFiles = projectDir.toPath() / "jni"
 
 kotlin {
@@ -100,6 +108,7 @@ val dokkaJar by tasks.registering(Jar::class) {
 tasks {
     dokkaHtml {
         dokkaSourceSets.create("main") {
+            sourceRoots.from("src/nativeMain")
             reportUndocumented = false
             jdkVersion = java.toolchain.languageVersion.get().asInt()
             noAndroidSdkLink = true
