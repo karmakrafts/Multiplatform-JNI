@@ -110,7 +110,7 @@ tasks {
         create<Copy>("publishDocs") {
             dependsOn(dokkaJar)
             mustRunAfter(dokkaJar)
-            from(dokkaJar.get().outputs.files.first())
+            from(zipTree(dokkaJar.get().outputs.files.first()))
             into(docsDir)
         }
     }
