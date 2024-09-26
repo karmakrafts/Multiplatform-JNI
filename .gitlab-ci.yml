@@ -16,7 +16,7 @@ cache:
 build:
   stage: build
   script:
-    - ./gradlew clean publish --no-daemon
+    - ./gradlew -DpublishDocs.root=/var/www/docs/multiplatform-jni clean publish publishDocs --no-daemon
   only:
     - master
   tags:
