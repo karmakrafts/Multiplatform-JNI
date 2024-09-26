@@ -70,62 +70,62 @@ internal data class SimpleFieldDescriptor(
 class JvmField(
     val enclosingClass: JvmClass,
     val descriptor: FieldDescriptor,
-    val handle: jfieldID,
+    val id: jfieldID,
 ) : FieldDescriptor by descriptor {
     // Getters
 
     fun getByte(env: JNIEnvVar, instance: JvmObject = JvmObject.NULL): Byte {
         if (descriptor.isStatic) {
-            return env.pointed?.GetStaticByteField?.invoke(env.ptr, enclosingClass.handle, handle)
+            return env.pointed?.GetStaticByteField?.invoke(env.ptr, enclosingClass.handle, id)
                 ?: 0
         }
         require(!instance.isNull()) { "Instance must not be null for non-static fields" }
-        return env.pointed?.GetByteField?.invoke(env.ptr, instance.handle, handle) ?: 0
+        return env.pointed?.GetByteField?.invoke(env.ptr, instance.handle, id) ?: 0
     }
 
     fun getShort(env: JNIEnvVar, instance: JvmObject = JvmObject.NULL): Short {
         if (descriptor.isStatic) {
-            return env.pointed?.GetStaticShortField?.invoke(env.ptr, enclosingClass.handle, handle)
+            return env.pointed?.GetStaticShortField?.invoke(env.ptr, enclosingClass.handle, id)
                 ?: 0
         }
         require(!instance.isNull()) { "Instance must not be null for non-static fields" }
-        return env.pointed?.GetShortField?.invoke(env.ptr, instance.handle, handle) ?: 0
+        return env.pointed?.GetShortField?.invoke(env.ptr, instance.handle, id) ?: 0
     }
 
     fun getInt(env: JNIEnvVar, instance: JvmObject = JvmObject.NULL): Int {
         if (descriptor.isStatic) {
-            return env.pointed?.GetStaticIntField?.invoke(env.ptr, enclosingClass.handle, handle)
+            return env.pointed?.GetStaticIntField?.invoke(env.ptr, enclosingClass.handle, id)
                 ?: 0
         }
         require(!instance.isNull()) { "Instance must not be null for non-static fields" }
-        return env.pointed?.GetIntField?.invoke(env.ptr, instance.handle, handle) ?: 0
+        return env.pointed?.GetIntField?.invoke(env.ptr, instance.handle, id) ?: 0
     }
 
     fun getLong(env: JNIEnvVar, instance: JvmObject = JvmObject.NULL): Long {
         if (descriptor.isStatic) {
-            return env.pointed?.GetStaticLongField?.invoke(env.ptr, enclosingClass.handle, handle)
+            return env.pointed?.GetStaticLongField?.invoke(env.ptr, enclosingClass.handle, id)
                 ?: 0
         }
         require(!instance.isNull()) { "Instance must not be null for non-static fields" }
-        return env.pointed?.GetLongField?.invoke(env.ptr, instance.handle, handle) ?: 0
+        return env.pointed?.GetLongField?.invoke(env.ptr, instance.handle, id) ?: 0
     }
 
     fun getFloat(env: JNIEnvVar, instance: JvmObject = JvmObject.NULL): Float {
         if (descriptor.isStatic) {
-            return env.pointed?.GetStaticFloatField?.invoke(env.ptr, enclosingClass.handle, handle)
+            return env.pointed?.GetStaticFloatField?.invoke(env.ptr, enclosingClass.handle, id)
                 ?: 0F
         }
         require(!instance.isNull()) { "Instance must not be null for non-static fields" }
-        return env.pointed?.GetFloatField?.invoke(env.ptr, instance.handle, handle) ?: 0F
+        return env.pointed?.GetFloatField?.invoke(env.ptr, instance.handle, id) ?: 0F
     }
 
     fun getDouble(env: JNIEnvVar, instance: JvmObject = JvmObject.NULL): Double {
         if (descriptor.isStatic) {
-            return env.pointed?.GetStaticDoubleField?.invoke(env.ptr, enclosingClass.handle, handle)
+            return env.pointed?.GetStaticDoubleField?.invoke(env.ptr, enclosingClass.handle, id)
                 ?: 0.0
         }
         require(!instance.isNull()) { "Instance must not be null for non-static fields" }
-        return env.pointed?.GetDoubleField?.invoke(env.ptr, instance.handle, handle) ?: 0.0
+        return env.pointed?.GetDoubleField?.invoke(env.ptr, instance.handle, id) ?: 0.0
     }
 
     fun getBoolean(env: JNIEnvVar, instance: JvmObject = JvmObject.NULL): Boolean {
@@ -133,11 +133,11 @@ class JvmField(
             return env.pointed?.GetStaticBooleanField?.invoke(
                 env.ptr,
                 enclosingClass.handle,
-                handle
+                id
             )?.toKBoolean() ?: false
         }
         require(!instance.isNull()) { "Instance must not be null for non-static fields" }
-        return env.pointed?.GetBooleanField?.invoke(env.ptr, instance.handle, handle)?.toKBoolean()
+        return env.pointed?.GetBooleanField?.invoke(env.ptr, instance.handle, id)?.toKBoolean()
             ?: false
     }
 
@@ -147,7 +147,7 @@ class JvmField(
                 env.pointed?.GetStaticObjectField?.invoke(
                     env.ptr,
                     enclosingClass.handle,
-                    handle
+                    id
                 )
             )
         }
@@ -156,7 +156,7 @@ class JvmField(
             env.pointed?.GetObjectField?.invoke(
                 env.ptr,
                 instance.handle,
-                handle
+                id
             )
         )
     }
@@ -180,56 +180,56 @@ class JvmField(
 
     fun setByte(env: JNIEnvVar, value: Byte, instance: JvmObject = JvmObject.NULL) {
         if (descriptor.isStatic) {
-            env.pointed?.SetStaticByteField?.invoke(env.ptr, enclosingClass.handle, handle, value)
+            env.pointed?.SetStaticByteField?.invoke(env.ptr, enclosingClass.handle, id, value)
             return
         }
         require(!instance.isNull()) { "Instance must not be null for non-static fields" }
-        env.pointed?.SetByteField?.invoke(env.ptr, instance.handle, handle, value.convert())
+        env.pointed?.SetByteField?.invoke(env.ptr, instance.handle, id, value.convert())
     }
 
     fun setShort(env: JNIEnvVar, value: Short, instance: JvmObject = JvmObject.NULL) {
         if (descriptor.isStatic) {
-            env.pointed?.SetStaticShortField?.invoke(env.ptr, enclosingClass.handle, handle, value)
+            env.pointed?.SetStaticShortField?.invoke(env.ptr, enclosingClass.handle, id, value)
             return
         }
         require(!instance.isNull()) { "Instance must not be null for non-static fields" }
-        env.pointed?.SetShortField?.invoke(env.ptr, instance.handle, handle, value.convert())
+        env.pointed?.SetShortField?.invoke(env.ptr, instance.handle, id, value.convert())
     }
 
     fun setInt(env: JNIEnvVar, value: Int, instance: JvmObject = JvmObject.NULL) {
         if (descriptor.isStatic) {
-            env.pointed?.SetStaticIntField?.invoke(env.ptr, enclosingClass.handle, handle, value)
+            env.pointed?.SetStaticIntField?.invoke(env.ptr, enclosingClass.handle, id, value)
             return
         }
         require(!instance.isNull()) { "Instance must not be null for non-static fields" }
-        env.pointed?.SetIntField?.invoke(env.ptr, instance.handle, handle, value.convert())
+        env.pointed?.SetIntField?.invoke(env.ptr, instance.handle, id, value.convert())
     }
 
     fun setLong(env: JNIEnvVar, value: Long, instance: JvmObject = JvmObject.NULL) {
         if (descriptor.isStatic) {
-            env.pointed?.SetStaticLongField?.invoke(env.ptr, enclosingClass.handle, handle, value)
+            env.pointed?.SetStaticLongField?.invoke(env.ptr, enclosingClass.handle, id, value)
             return
         }
         require(!instance.isNull()) { "Instance must not be null for non-static fields" }
-        env.pointed?.SetLongField?.invoke(env.ptr, instance.handle, handle, value.convert())
+        env.pointed?.SetLongField?.invoke(env.ptr, instance.handle, id, value.convert())
     }
 
     fun setFloat(env: JNIEnvVar, value: Float, instance: JvmObject = JvmObject.NULL) {
         if (descriptor.isStatic) {
-            env.pointed?.SetStaticFloatField?.invoke(env.ptr, enclosingClass.handle, handle, value)
+            env.pointed?.SetStaticFloatField?.invoke(env.ptr, enclosingClass.handle, id, value)
             return
         }
         require(!instance.isNull()) { "Instance must not be null for non-static fields" }
-        env.pointed?.SetFloatField?.invoke(env.ptr, instance.handle, handle, value)
+        env.pointed?.SetFloatField?.invoke(env.ptr, instance.handle, id, value)
     }
 
     fun setDouble(env: JNIEnvVar, value: Double, instance: JvmObject = JvmObject.NULL) {
         if (descriptor.isStatic) {
-            env.pointed?.SetStaticDoubleField?.invoke(env.ptr, enclosingClass.handle, handle, value)
+            env.pointed?.SetStaticDoubleField?.invoke(env.ptr, enclosingClass.handle, id, value)
             return
         }
         require(!instance.isNull()) { "Instance must not be null for non-static fields" }
-        env.pointed?.SetDoubleField?.invoke(env.ptr, instance.handle, handle, value)
+        env.pointed?.SetDoubleField?.invoke(env.ptr, instance.handle, id, value)
     }
 
     fun setBoolean(env: JNIEnvVar, value: Boolean, instance: JvmObject = JvmObject.NULL) {
@@ -237,13 +237,13 @@ class JvmField(
             env.pointed?.SetStaticBooleanField?.invoke(
                 env.ptr,
                 enclosingClass.handle,
-                handle,
+                id,
                 value.toJBoolean()
             )
             return
         }
         require(!instance.isNull()) { "Instance must not be null for non-static fields" }
-        env.pointed?.SetBooleanField?.invoke(env.ptr, instance.handle, handle, value.toJBoolean())
+        env.pointed?.SetBooleanField?.invoke(env.ptr, instance.handle, id, value.toJBoolean())
     }
 
     fun setObject(env: JNIEnvVar, value: JvmObject, instance: JvmObject = JvmObject.NULL) {
@@ -251,13 +251,13 @@ class JvmField(
             env.pointed?.SetStaticObjectField?.invoke(
                 env.ptr,
                 enclosingClass.handle,
-                handle,
+                id,
                 value.handle
             )
             return
         }
         require(!instance.isNull()) { "Instance must not be null for non-static fields" }
-        env.pointed?.SetObjectField?.invoke(env.ptr, instance.handle, handle, value.handle)
+        env.pointed?.SetObjectField?.invoke(env.ptr, instance.handle, id, value.handle)
     }
 
     inline fun <reified R> set(env: JNIEnvVar, value: R, instance: JvmObject = JvmObject.NULL) {
@@ -271,6 +271,30 @@ class JvmField(
             Boolean::class -> setBoolean(env, value as Boolean, instance)
             JvmObject::class -> setObject(env, value as JvmObject, instance)
             else -> throw IllegalArgumentException("Unsupported field type")
+        }
+    }
+
+    fun getInstance(env: JNIEnvVar): JvmObject =
+        JvmObject.fromHandle(
+            env.pointed?.ToReflectedField?.invoke(
+                env.ptr,
+                enclosingClass.handle,
+                id,
+                descriptor.isStatic.toJBoolean()
+            )
+        )
+
+    fun getVisibility(env: JNIEnvVar): JvmVisibility = jniScoped(env) {
+        JvmClass.find(Type.get("java.lang.reflect.Field")).let { fieldClass ->
+            fieldClass.findMethod {
+                name = "getModifiers"
+                returnType = PrimitiveType.INT
+                callType = CallType.DIRECT
+            }.callInt(instance).toUShort().let { modifiers ->
+                JvmVisibility.entries.find {
+                    modifiers and it.jvmValue == it.jvmValue
+                } ?: JvmVisibility.PRIVATE
+            }
         }
     }
 }

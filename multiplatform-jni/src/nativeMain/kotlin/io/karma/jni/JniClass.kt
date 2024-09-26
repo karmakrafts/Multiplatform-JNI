@@ -19,7 +19,6 @@
 package io.karma.jni
 
 import co.touchlab.stately.collections.ConcurrentMutableMap
-import io.karma.jni.JvmObject.Companion.cast
 import jni.JNIEnvVar
 import jni.jclass
 import kotlinx.cinterop.ExperimentalForeignApi
@@ -44,7 +43,7 @@ class JvmClass internal constructor(
             else cache.getOrPut(handle) { JvmClass(handle) }
         }
 
-        fun fromUnchecked(obj: JvmObject): JvmClass = fromHandle(obj.handle?.reinterpret())
+        fun fromUnchecked(obj: JvmObject): JvmClass = fromHandle(obj.handle)
 
         fun findOrNull(env: JNIEnvVar, type: Type): JvmClass? {
             val handle = memScoped {
@@ -93,7 +92,7 @@ class JvmClass internal constructor(
     fun findMethodOrNull(env: JNIEnvVar, descriptor: MethodDescriptor): JvmMethod? {
         if (descriptor in methods) return methods[descriptor]
         val handle = memScoped {
-            if (descriptor.access == MethodAccess.STATIC) env.pointed?.GetStaticMethodID?.invoke(
+            if (descriptor.callType == CallType.STATIC) env.pointed?.GetStaticMethodID?.invoke(
                 env.ptr,
                 handle,
                 allocCString(descriptor.name),
@@ -120,35 +119,51 @@ class JvmClass internal constructor(
     fun findMethod(env: JNIEnvVar, closure: MethodDescriptorBuilder.() -> Unit): JvmMethod =
         findMethod(env, MethodDescriptor.create(closure))
 
-    fun getType(env: JNIEnvVar): Type { // @formatter:off
-        return findMethod(env) {
+    fun getType(env: JNIEnvVar): Type = jniScoped(env) {
+        findMethod {
             name = "getName"
             returnType = Type.get("java.lang.String")
-        }.callObject(env, this)
-            .cast<JvmString>(env)
-            .get(env)
+            callType = CallType.DIRECT
+        }.callObject(this@JvmClass)
+            .cast<JvmString>()
+            .value
             ?.let(Type::get)
             ?: NullType
-    } // @formatter:on
+    }
 
-    fun hasAnnotation(env: JNIEnvVar, type: Type): Boolean {
-        require(type is ClassType) { "Annotation must be class type" }
-        return findMethod(env) {
+    fun hasAnnotation(env: JNIEnvVar, type: Type): Boolean = jniScoped(env) {
+        require(type.typeClass == TypeClass.OBJECT) { "Annotation must be class type" }
+        findMethod {
             name = "isAnnotationPresent"
             returnType = PrimitiveType.BOOLEAN
             parameterTypes += Type.get("java.lang.Class")
-        }.callBoolean(env, this) {
-            put(find(env, type))
+            callType = CallType.DIRECT
+        }.callBoolean(this@JvmClass) {
+            put(Companion.find(type))
         }
     }
 
-    fun getAnnotation(env: JNIEnvVar, type: Type): JvmObject {
-        require(type is ClassType) { "Annotation must be class type" }
-        return findMethod(env) {
+    fun getAnnotation(env: JNIEnvVar, type: Type): JvmObject = jniScoped(env) {
+        require(type.typeClass == TypeClass.OBJECT) { "Annotation must be class type" }
+        findMethod {
             name = "getAnnotation"
             returnType = type
-        }.callObject(env, this) {
-            put(find(env, type))
+            parameterTypes += Type.get("java.lang.Class")
+            callType = CallType.DIRECT
+        }.callObject(this@JvmClass) {
+            put(Companion.find(type))
+        }
+    }
+
+    fun getVisibility(env: JNIEnvVar): JvmVisibility = jniScoped(env) {
+        findMethod {
+            name = "getModifiers"
+            returnType = PrimitiveType.INT
+            callType = CallType.DIRECT
+        }.callInt(this@JvmClass).toUShort().let { modifiers ->
+            JvmVisibility.entries.find {
+                (modifiers and it.jvmValue) == it.jvmValue
+            } ?: JvmVisibility.PRIVATE
         }
     }
 }

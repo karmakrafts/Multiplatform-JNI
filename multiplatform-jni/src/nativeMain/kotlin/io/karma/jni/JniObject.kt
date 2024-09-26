@@ -70,28 +70,32 @@ interface JvmObject {
         JvmClass.fromHandle(env.pointed?.GetObjectClass?.invoke(env.ptr, handle))
 
     fun cast(env: JNIEnvVar, type: Type): JvmObject {
-        return JvmClass.find(env, type).let { clazz ->
-            clazz.findMethod(env) {
+        return JvmClass.find(env, type).let {
+            it.findMethod(env) {
                 name = "cast"
                 returnType = Type.get("java.lang.Object")
                 parameterTypes += Type.get("java.lang.Object")
-            }.callObject(env, clazz) {
+            }.callObject(env, it) {
                 put(this@JvmObject)
             }
         }
     }
 
+    fun cast(env: JNIEnvVar, clazz: JvmClass): JvmObject = cast(env, clazz.getType(env))
+
     fun isInstance(env: JNIEnvVar, type: Type): Boolean {
-        return JvmClass.find(env, type).let { clazz ->
-            clazz.findMethod(env) {
+        return JvmClass.find(env, type).let {
+            it.findMethod(env) {
                 name = "isInstance"
                 returnType = PrimitiveType.BOOLEAN
                 parameterTypes += Type.get("java.lang.Object")
-            }.callBoolean(env, clazz) {
+            }.callBoolean(env, it) {
                 put(this@JvmObject)
             }
         }
     }
+
+    fun isInstance(env: JNIEnvVar, clazz: JvmClass): Boolean = isInstance(env, clazz.getType(env))
 }
 
 internal value class SimpleJvmObject(
