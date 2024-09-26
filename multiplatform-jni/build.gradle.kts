@@ -106,12 +106,11 @@ tasks {
             externalDocumentationLink("https://docs.karmakrafts.dev/multiplatform-jni")
         }
     }
-    val archiveName = project.base.archivesName.get()
     System.getProperty("publishDocs.root")?.let { docsDir ->
         create<Copy>("publishDocs") {
             dependsOn(dokkaJar)
             mustRunAfter(dokkaJar)
-            from(zipTree(rootProject.projectDir.toPath() / "build" / "libs" / "$archiveName-$version-api-javadoc.jar"))
+            from(dokkaJar.get().outputs.files.first())
             into(docsDir)
         }
     }
