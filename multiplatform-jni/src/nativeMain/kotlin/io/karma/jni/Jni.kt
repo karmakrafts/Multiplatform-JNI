@@ -18,15 +18,52 @@
 
 package io.karma.jni
 
+import jni.JNIEnvVar
 import jni.JNI_FALSE
 import jni.JNI_TRUE
+import jni.JavaVMVar
 import jni.jboolean
+import jni.jbyte
+import jni.jclass
+import jni.jdouble
+import jni.jfieldID
+import jni.jfloat
+import jni.jint
+import jni.jlong
+import jni.jmethodID
+import jni.jobject
+import jni.jshort
+import jni.jstring
+import jni.jvalue
 import kotlinx.cinterop.ExperimentalForeignApi
 import kotlinx.cinterop.convert
 
-fun jboolean.toKBoolean(): Boolean = this == JNI_TRUE.convert<jboolean>()
-fun Boolean.toJBoolean(): jboolean =
-    if (this) JNI_TRUE.convert<jboolean>() else JNI_FALSE.convert<jboolean>()
+const val JNI_OK: JvmInt = jni.JNI_OK
+const val JNI_ERR: JvmInt = jni.JNI_ERR
+const val JNI_TRUE: JvmInt = jni.JNI_TRUE
+const val JNI_FALSE: JvmInt = jni.JNI_FALSE
+
+typealias JavaVm = JavaVMVar
+typealias JniEnvironment = JNIEnvVar
+
+typealias JvmByte = jbyte
+typealias JvmShort = jshort
+typealias JvmInt = jint
+typealias JvmLong = jlong
+typealias JvmFloat = jfloat
+typealias JvmDouble = jdouble
+typealias JvmBoolean = jboolean
+
+typealias JvmClassHandle = jclass
+typealias JvmObjectHandle = jobject
+typealias JvmStringHandle = jstring
+typealias JvmValue = jvalue
+typealias JvmFieldId = jfieldID
+typealias JvmMethodId = jmethodID
+
+fun JvmBoolean.toKBoolean(): Boolean = this == JNI_TRUE.convert<JvmBoolean>()
+fun Boolean.toJBoolean(): JvmBoolean =
+    if (this) JNI_TRUE.convert<JvmBoolean>() else JNI_FALSE.convert<JvmBoolean>()
 
 enum class JvmVisibility(internal val jvmValue: UShort) {
     // @formatter:off

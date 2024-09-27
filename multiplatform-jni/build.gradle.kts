@@ -117,7 +117,6 @@ tasks {
     }
     System.getProperty("publishDocs.root")?.let { docsDir ->
         create<Copy>("publishDocs") {
-            dependsOn(dokkaJar)
             mustRunAfter(dokkaJar)
             from(zipTree(dokkaJar.get().outputs.files.first()))
             into(docsDir)

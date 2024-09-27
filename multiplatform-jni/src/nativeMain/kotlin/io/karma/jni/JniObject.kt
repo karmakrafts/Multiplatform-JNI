@@ -18,8 +18,6 @@
 
 package io.karma.jni
 
-import jni.JNIEnvVar
-import jni.jobject
 import kotlinx.cinterop.ExperimentalForeignApi
 import kotlinx.cinterop.invoke
 import kotlinx.cinterop.pointed
@@ -28,16 +26,16 @@ import kotlinx.cinterop.ptr
 interface JvmObject {
     companion object {
         val NULL: JvmObjectRef = object : JvmObjectRef {
-            override val handle: jobject? = null
-            override fun delete(env: JNIEnvVar) {}
+            override val handle: JvmObjectHandle? = null
+            override fun delete(env: JniEnvironment) {}
         }
 
-        fun fromHandle(handle: jobject?): JvmObject {
+        fun fromHandle(handle: JvmObjectHandle?): JvmObject {
             return if (handle == null) NULL
             else SimpleJvmObject(handle)
         }
 
-        inline fun <reified T : JvmObject> JvmObject.cast(env: JNIEnvVar): T {
+        inline fun <reified T : JvmObject> JvmObject.cast(env: JniEnvironment): T {
             return when (T::class) {
                 JvmObject::class, JvmObjectRef::class -> this
                 JvmString::class -> JvmString.fromUnchecked(cast(env, Type.STRING))
@@ -47,29 +45,29 @@ interface JvmObject {
         }
     }
 
-    val handle: jobject?
+    val handle: JvmObjectHandle?
 
     fun isNull(): Boolean = handle == null
 
-    fun createGlobalRef(env: JNIEnvVar): JvmObjectRef {
+    fun createGlobalRef(env: JniEnvironment): JvmObjectRef {
         return if (handle == null) NULL
         else JvmGlobalRef(env.pointed?.NewGlobalRef?.invoke(env.ptr, handle))
     }
 
-    fun createLocalRef(env: JNIEnvVar): JvmObjectRef {
+    fun createLocalRef(env: JniEnvironment): JvmObjectRef {
         return if (handle == null) NULL
         else JvmLocalRef(env.pointed?.NewLocalRef?.invoke(env.ptr, handle))
     }
 
-    fun createWeakRef(env: JNIEnvVar): JvmObjectRef {
+    fun createWeakRef(env: JniEnvironment): JvmObjectRef {
         return if (handle == null) NULL
         else JvmWeakRef(env.pointed?.NewWeakGlobalRef?.invoke(env.ptr, handle))
     }
 
-    fun getTypeClass(env: JNIEnvVar): JvmClass =
+    fun getTypeClass(env: JniEnvironment): JvmClass =
         JvmClass.fromHandle(env.pointed?.GetObjectClass?.invoke(env.ptr, handle))
 
-    fun cast(env: JNIEnvVar, type: Type): JvmObject {
+    fun cast(env: JniEnvironment, type: Type): JvmObject {
         return JvmClass.find(env, type).let {
             it.findMethod(env) {
                 name = "cast"
@@ -81,9 +79,9 @@ interface JvmObject {
         }
     }
 
-    fun cast(env: JNIEnvVar, clazz: JvmClass): JvmObject = cast(env, clazz.getType(env))
+    fun cast(env: JniEnvironment, clazz: JvmClass): JvmObject = cast(env, clazz.getType(env))
 
-    fun isInstance(env: JNIEnvVar, type: Type): Boolean {
+    fun isInstance(env: JniEnvironment, type: Type): Boolean {
         return JvmClass.find(env, type).let {
             it.findMethod(env) {
                 name = "isInstance"
@@ -95,9 +93,10 @@ interface JvmObject {
         }
     }
 
-    fun isInstance(env: JNIEnvVar, clazz: JvmClass): Boolean = isInstance(env, clazz.getType(env))
+    fun isInstance(env: JniEnvironment, clazz: JvmClass): Boolean =
+        isInstance(env, clazz.getType(env))
 
-    fun toKString(env: JNIEnvVar): String = jniScoped(env) {
+    fun toKString(env: JniEnvironment): String = jniScoped(env) {
         getTypeClass().findMethod {
             name = "toString"
             returnType = Type.STRING
@@ -108,36 +107,36 @@ interface JvmObject {
 }
 
 internal value class SimpleJvmObject(
-    override val handle: jobject?
+    override val handle: JvmObjectHandle?
 ) : JvmObject
 
 interface JvmObjectRef : JvmObject {
-    fun delete(env: JNIEnvVar)
+    fun delete(env: JniEnvironment)
 }
 
 internal value class JvmGlobalRef(
-    override val handle: jobject?
+    override val handle: JvmObjectHandle?
 ) : JvmObjectRef {
-    override fun createGlobalRef(env: JNIEnvVar): JvmObjectRef = this
-    override fun delete(env: JNIEnvVar) {
+    override fun createGlobalRef(env: JniEnvironment): JvmObjectRef = this
+    override fun delete(env: JniEnvironment) {
         env.pointed?.DeleteGlobalRef?.invoke(env.ptr, handle)
     }
 }
 
 internal value class JvmLocalRef(
-    override val handle: jobject?
+    override val handle: JvmObjectHandle?
 ) : JvmObjectRef {
-    override fun createLocalRef(env: JNIEnvVar): JvmObjectRef = this
-    override fun delete(env: JNIEnvVar) {
+    override fun createLocalRef(env: JniEnvironment): JvmObjectRef = this
+    override fun delete(env: JniEnvironment) {
         env.pointed?.DeleteLocalRef?.invoke(env.ptr, handle)
     }
 }
 
 internal value class JvmWeakRef(
-    override val handle: jobject?
+    override val handle: JvmObjectHandle?
 ) : JvmObjectRef {
-    override fun createWeakRef(env: JNIEnvVar): JvmObjectRef = this
-    override fun delete(env: JNIEnvVar) {
+    override fun createWeakRef(env: JniEnvironment): JvmObjectRef = this
+    override fun delete(env: JniEnvironment) {
         env.pointed?.DeleteWeakGlobalRef?.invoke(env.ptr, handle)
     }
 }

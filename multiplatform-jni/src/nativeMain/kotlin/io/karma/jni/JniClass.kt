@@ -19,33 +19,30 @@
 package io.karma.jni
 
 import co.touchlab.stately.collections.ConcurrentMutableMap
-import jni.JNIEnvVar
-import jni.jclass
 import kotlinx.cinterop.ExperimentalForeignApi
 import kotlinx.cinterop.invoke
 import kotlinx.cinterop.memScoped
 import kotlinx.cinterop.pointed
 import kotlinx.cinterop.ptr
-import kotlinx.cinterop.reinterpret
 
 class JvmClass internal constructor(
-    override val handle: jclass?
+    override val handle: JvmClassHandle?
 ) : JvmObject {
-    private val fields: ConcurrentMutableMap<FieldDescriptor, JvmField> = ConcurrentMutableMap()
-    private val methods: ConcurrentMutableMap<MethodDescriptor, JvmMethod> = ConcurrentMutableMap()
+    internal val fields: ConcurrentMutableMap<FieldDescriptor, JvmField> = ConcurrentMutableMap()
+    internal val methods: ConcurrentMutableMap<MethodDescriptor, JvmMethod> = ConcurrentMutableMap()
 
     companion object {
         val NULL: JvmClass = JvmClass(null)
-        private val cache: ConcurrentMutableMap<jclass, JvmClass> = ConcurrentMutableMap()
+        private val cache: ConcurrentMutableMap<JvmClassHandle, JvmClass> = ConcurrentMutableMap()
 
-        fun fromHandle(handle: jclass?): JvmClass {
+        fun fromHandle(handle: JvmClassHandle?): JvmClass {
             return if (handle == null) NULL
             else cache.getOrPut(handle) { JvmClass(handle) }
         }
 
         fun fromUnchecked(obj: JvmObject): JvmClass = fromHandle(obj.handle)
 
-        fun findOrNull(env: JNIEnvVar, type: Type): JvmClass? {
+        fun findOrNull(env: JniEnvironment, type: Type): JvmClass? {
             val handle = memScoped {
                 env.pointed?.FindClass?.invoke(env.ptr, allocCString(type.jvmName))
             } ?: return null
@@ -55,11 +52,11 @@ class JvmClass internal constructor(
             }
         }
 
-        fun find(env: JNIEnvVar, type: Type): JvmClass =
+        fun find(env: JniEnvironment, type: Type): JvmClass =
             requireNotNull(findOrNull(env, type)) { "Could not find class" }
     }
 
-    fun findFieldOrNull(env: JNIEnvVar, descriptor: FieldDescriptor): JvmField? {
+    fun findFieldOrNull(env: JniEnvironment, descriptor: FieldDescriptor): JvmField? {
         if (descriptor in fields) return fields[descriptor]
         val handle = memScoped {
             if (descriptor.isStatic) env.pointed?.GetStaticFieldID?.invoke(
@@ -80,16 +77,19 @@ class JvmClass internal constructor(
         }
     }
 
-    fun findFieldOrNull(env: JNIEnvVar, closure: FieldDescriptorBuilder.() -> Unit): JvmField? =
+    fun findFieldOrNull(
+        env: JniEnvironment,
+        closure: FieldDescriptorBuilder.() -> Unit
+    ): JvmField? =
         findFieldOrNull(env, FieldDescriptor.create(closure))
 
-    fun findField(env: JNIEnvVar, descriptor: FieldDescriptor): JvmField =
+    fun findField(env: JniEnvironment, descriptor: FieldDescriptor): JvmField =
         requireNotNull(findFieldOrNull(env, descriptor)) { "Could not find field" }
 
-    fun findField(env: JNIEnvVar, closure: FieldDescriptorBuilder.() -> Unit): JvmField =
+    fun findField(env: JniEnvironment, closure: FieldDescriptorBuilder.() -> Unit): JvmField =
         findField(env, FieldDescriptor.create(closure))
 
-    fun findMethodOrNull(env: JNIEnvVar, descriptor: MethodDescriptor): JvmMethod? {
+    fun findMethodOrNull(env: JniEnvironment, descriptor: MethodDescriptor): JvmMethod? {
         if (descriptor in methods) return methods[descriptor]
         val handle = memScoped {
             if (descriptor.callType == CallType.STATIC) env.pointed?.GetStaticMethodID?.invoke(
@@ -110,16 +110,19 @@ class JvmClass internal constructor(
         }
     }
 
-    fun findMethodOrNull(env: JNIEnvVar, closure: MethodDescriptorBuilder.() -> Unit): JvmMethod? =
+    fun findMethodOrNull(
+        env: JniEnvironment,
+        closure: MethodDescriptorBuilder.() -> Unit
+    ): JvmMethod? =
         findMethodOrNull(env, MethodDescriptor.create(closure))
 
-    fun findMethod(env: JNIEnvVar, descriptor: MethodDescriptor): JvmMethod =
+    fun findMethod(env: JniEnvironment, descriptor: MethodDescriptor): JvmMethod =
         requireNotNull(findMethodOrNull(env, descriptor)) { "Could not find method" }
 
-    fun findMethod(env: JNIEnvVar, closure: MethodDescriptorBuilder.() -> Unit): JvmMethod =
+    fun findMethod(env: JniEnvironment, closure: MethodDescriptorBuilder.() -> Unit): JvmMethod =
         findMethod(env, MethodDescriptor.create(closure))
 
-    fun getType(env: JNIEnvVar): Type = jniScoped(env) {
+    fun getType(env: JniEnvironment): Type = jniScoped(env) {
         findMethod {
             name = "getName"
             returnType = Type.STRING
@@ -131,7 +134,7 @@ class JvmClass internal constructor(
             ?: NullType
     }
 
-    fun hasAnnotation(env: JNIEnvVar, type: Type): Boolean = jniScoped(env) {
+    fun hasAnnotation(env: JniEnvironment, type: Type): Boolean = jniScoped(env) {
         require(type.typeClass == TypeClass.OBJECT) { "Annotation must be class type" }
         findMethod {
             name = "isAnnotationPresent"
@@ -139,11 +142,11 @@ class JvmClass internal constructor(
             parameterTypes += Type.CLASS
             callType = CallType.DIRECT
         }.callBoolean(this@JvmClass) {
-            put(Companion.find(type))
+            put(find(type))
         }
     }
 
-    fun getAnnotation(env: JNIEnvVar, type: Type): JvmObject = jniScoped(env) {
+    fun getAnnotation(env: JniEnvironment, type: Type): JvmObject = jniScoped(env) {
         require(type.typeClass == TypeClass.OBJECT) { "Annotation must be class type" }
         findMethod {
             name = "getAnnotation"
@@ -151,11 +154,11 @@ class JvmClass internal constructor(
             parameterTypes += Type.CLASS
             callType = CallType.DIRECT
         }.callObject(this@JvmClass) {
-            put(Companion.find(type))
+            put(find(type))
         }
     }
 
-    fun getVisibility(env: JNIEnvVar): JvmVisibility = jniScoped(env) {
+    fun getVisibility(env: JniEnvironment): JvmVisibility = jniScoped(env) {
         findMethod {
             name = "getModifiers"
             returnType = PrimitiveType.INT
@@ -165,5 +168,13 @@ class JvmClass internal constructor(
                 (modifiers and it.jvmValue) == it.jvmValue
             } ?: JvmVisibility.PRIVATE
         }
+    }
+
+    fun getFields(env: JniEnvironment): List<JvmField> = jniScoped(env) {
+        emptyList()
+    }
+
+    fun getMethods(env: JniEnvironment): List<JvmMethod> = jniScoped(env) {
+        emptyList()
     }
 }

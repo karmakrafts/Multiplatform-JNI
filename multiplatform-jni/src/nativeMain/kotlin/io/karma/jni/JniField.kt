@@ -18,8 +18,7 @@
 
 package io.karma.jni
 
-import jni.JNIEnvVar
-import jni.jfieldID
+import io.karma.jni.JvmObject.Companion.cast
 import kotlinx.cinterop.ExperimentalForeignApi
 import kotlinx.cinterop.convert
 import kotlinx.cinterop.invoke
@@ -70,11 +69,11 @@ internal data class SimpleFieldDescriptor(
 class JvmField(
     val enclosingClass: JvmClass,
     val descriptor: FieldDescriptor,
-    val id: jfieldID,
+    val id: JvmFieldId,
 ) : FieldDescriptor by descriptor {
     // Getters
 
-    fun getByte(env: JNIEnvVar, instance: JvmObject = JvmObject.NULL): Byte {
+    fun getByte(env: JniEnvironment, instance: JvmObject = JvmObject.NULL): Byte {
         if (descriptor.isStatic) {
             return env.pointed?.GetStaticByteField?.invoke(env.ptr, enclosingClass.handle, id)
                 ?: 0
@@ -83,7 +82,7 @@ class JvmField(
         return env.pointed?.GetByteField?.invoke(env.ptr, instance.handle, id) ?: 0
     }
 
-    fun getShort(env: JNIEnvVar, instance: JvmObject = JvmObject.NULL): Short {
+    fun getShort(env: JniEnvironment, instance: JvmObject = JvmObject.NULL): Short {
         if (descriptor.isStatic) {
             return env.pointed?.GetStaticShortField?.invoke(env.ptr, enclosingClass.handle, id)
                 ?: 0
@@ -92,7 +91,7 @@ class JvmField(
         return env.pointed?.GetShortField?.invoke(env.ptr, instance.handle, id) ?: 0
     }
 
-    fun getInt(env: JNIEnvVar, instance: JvmObject = JvmObject.NULL): Int {
+    fun getInt(env: JniEnvironment, instance: JvmObject = JvmObject.NULL): Int {
         if (descriptor.isStatic) {
             return env.pointed?.GetStaticIntField?.invoke(env.ptr, enclosingClass.handle, id)
                 ?: 0
@@ -101,7 +100,7 @@ class JvmField(
         return env.pointed?.GetIntField?.invoke(env.ptr, instance.handle, id) ?: 0
     }
 
-    fun getLong(env: JNIEnvVar, instance: JvmObject = JvmObject.NULL): Long {
+    fun getLong(env: JniEnvironment, instance: JvmObject = JvmObject.NULL): Long {
         if (descriptor.isStatic) {
             return env.pointed?.GetStaticLongField?.invoke(env.ptr, enclosingClass.handle, id)
                 ?: 0
@@ -110,7 +109,7 @@ class JvmField(
         return env.pointed?.GetLongField?.invoke(env.ptr, instance.handle, id) ?: 0
     }
 
-    fun getFloat(env: JNIEnvVar, instance: JvmObject = JvmObject.NULL): Float {
+    fun getFloat(env: JniEnvironment, instance: JvmObject = JvmObject.NULL): Float {
         if (descriptor.isStatic) {
             return env.pointed?.GetStaticFloatField?.invoke(env.ptr, enclosingClass.handle, id)
                 ?: 0F
@@ -119,7 +118,7 @@ class JvmField(
         return env.pointed?.GetFloatField?.invoke(env.ptr, instance.handle, id) ?: 0F
     }
 
-    fun getDouble(env: JNIEnvVar, instance: JvmObject = JvmObject.NULL): Double {
+    fun getDouble(env: JniEnvironment, instance: JvmObject = JvmObject.NULL): Double {
         if (descriptor.isStatic) {
             return env.pointed?.GetStaticDoubleField?.invoke(env.ptr, enclosingClass.handle, id)
                 ?: 0.0
@@ -128,7 +127,7 @@ class JvmField(
         return env.pointed?.GetDoubleField?.invoke(env.ptr, instance.handle, id) ?: 0.0
     }
 
-    fun getBoolean(env: JNIEnvVar, instance: JvmObject = JvmObject.NULL): Boolean {
+    fun getBoolean(env: JniEnvironment, instance: JvmObject = JvmObject.NULL): Boolean {
         if (descriptor.isStatic) {
             return env.pointed?.GetStaticBooleanField?.invoke(
                 env.ptr,
@@ -141,7 +140,7 @@ class JvmField(
             ?: false
     }
 
-    fun getObject(env: JNIEnvVar, instance: JvmObject = JvmObject.NULL): JvmObject {
+    fun getObject(env: JniEnvironment, instance: JvmObject = JvmObject.NULL): JvmObject {
         if (descriptor.isStatic) {
             return JvmObject.fromHandle(
                 env.pointed?.GetStaticObjectField?.invoke(
@@ -161,8 +160,15 @@ class JvmField(
         )
     }
 
+    inline fun <reified R : JvmObject> getObject(
+        env: JniEnvironment,
+        instance: JvmObject = JvmObject.NULL
+    ): R {
+        return getObject(env, instance).cast(env)
+    }
+
     @Suppress("IMPLICIT_CAST_TO_ANY")
-    inline fun <reified R> get(env: JNIEnvVar, instance: JvmObject = JvmObject.NULL): R {
+    inline fun <reified R> get(env: JniEnvironment, instance: JvmObject = JvmObject.NULL): R {
         return when (R::class) {
             Byte::class -> getByte(env, instance)
             Short::class -> getShort(env, instance)
@@ -172,13 +178,15 @@ class JvmField(
             Double::class -> getDouble(env, instance)
             Boolean::class -> getBoolean(env, instance)
             JvmObject::class -> getObject(env, instance)
+            JvmString::class -> getObject(env, instance).cast(env)
+            JvmClass::class -> getObject(env, instance).cast(env)
             else -> throw IllegalArgumentException("Unsupported field type")
         } as R
     }
 
     // Setters
 
-    fun setByte(env: JNIEnvVar, value: Byte, instance: JvmObject = JvmObject.NULL) {
+    fun setByte(env: JniEnvironment, value: Byte, instance: JvmObject = JvmObject.NULL) {
         if (descriptor.isStatic) {
             env.pointed?.SetStaticByteField?.invoke(env.ptr, enclosingClass.handle, id, value)
             return
@@ -187,7 +195,7 @@ class JvmField(
         env.pointed?.SetByteField?.invoke(env.ptr, instance.handle, id, value.convert())
     }
 
-    fun setShort(env: JNIEnvVar, value: Short, instance: JvmObject = JvmObject.NULL) {
+    fun setShort(env: JniEnvironment, value: Short, instance: JvmObject = JvmObject.NULL) {
         if (descriptor.isStatic) {
             env.pointed?.SetStaticShortField?.invoke(env.ptr, enclosingClass.handle, id, value)
             return
@@ -196,7 +204,7 @@ class JvmField(
         env.pointed?.SetShortField?.invoke(env.ptr, instance.handle, id, value.convert())
     }
 
-    fun setInt(env: JNIEnvVar, value: Int, instance: JvmObject = JvmObject.NULL) {
+    fun setInt(env: JniEnvironment, value: Int, instance: JvmObject = JvmObject.NULL) {
         if (descriptor.isStatic) {
             env.pointed?.SetStaticIntField?.invoke(env.ptr, enclosingClass.handle, id, value)
             return
@@ -205,7 +213,7 @@ class JvmField(
         env.pointed?.SetIntField?.invoke(env.ptr, instance.handle, id, value.convert())
     }
 
-    fun setLong(env: JNIEnvVar, value: Long, instance: JvmObject = JvmObject.NULL) {
+    fun setLong(env: JniEnvironment, value: Long, instance: JvmObject = JvmObject.NULL) {
         if (descriptor.isStatic) {
             env.pointed?.SetStaticLongField?.invoke(env.ptr, enclosingClass.handle, id, value)
             return
@@ -214,7 +222,7 @@ class JvmField(
         env.pointed?.SetLongField?.invoke(env.ptr, instance.handle, id, value.convert())
     }
 
-    fun setFloat(env: JNIEnvVar, value: Float, instance: JvmObject = JvmObject.NULL) {
+    fun setFloat(env: JniEnvironment, value: Float, instance: JvmObject = JvmObject.NULL) {
         if (descriptor.isStatic) {
             env.pointed?.SetStaticFloatField?.invoke(env.ptr, enclosingClass.handle, id, value)
             return
@@ -223,7 +231,7 @@ class JvmField(
         env.pointed?.SetFloatField?.invoke(env.ptr, instance.handle, id, value)
     }
 
-    fun setDouble(env: JNIEnvVar, value: Double, instance: JvmObject = JvmObject.NULL) {
+    fun setDouble(env: JniEnvironment, value: Double, instance: JvmObject = JvmObject.NULL) {
         if (descriptor.isStatic) {
             env.pointed?.SetStaticDoubleField?.invoke(env.ptr, enclosingClass.handle, id, value)
             return
@@ -232,7 +240,7 @@ class JvmField(
         env.pointed?.SetDoubleField?.invoke(env.ptr, instance.handle, id, value)
     }
 
-    fun setBoolean(env: JNIEnvVar, value: Boolean, instance: JvmObject = JvmObject.NULL) {
+    fun setBoolean(env: JniEnvironment, value: Boolean, instance: JvmObject = JvmObject.NULL) {
         if (descriptor.isStatic) {
             env.pointed?.SetStaticBooleanField?.invoke(
                 env.ptr,
@@ -246,7 +254,7 @@ class JvmField(
         env.pointed?.SetBooleanField?.invoke(env.ptr, instance.handle, id, value.toJBoolean())
     }
 
-    fun setObject(env: JNIEnvVar, value: JvmObject, instance: JvmObject = JvmObject.NULL) {
+    fun setObject(env: JniEnvironment, value: JvmObject, instance: JvmObject = JvmObject.NULL) {
         if (descriptor.isStatic) {
             env.pointed?.SetStaticObjectField?.invoke(
                 env.ptr,
@@ -260,7 +268,11 @@ class JvmField(
         env.pointed?.SetObjectField?.invoke(env.ptr, instance.handle, id, value.handle)
     }
 
-    inline fun <reified R> set(env: JNIEnvVar, value: R, instance: JvmObject = JvmObject.NULL) {
+    inline fun <reified R> set(
+        env: JniEnvironment,
+        value: R,
+        instance: JvmObject = JvmObject.NULL
+    ) {
         when (R::class) {
             Byte::class -> setByte(env, value as Byte, instance)
             Short::class -> setShort(env, value as Short, instance)
@@ -269,12 +281,17 @@ class JvmField(
             Float::class -> setFloat(env, value as Float, instance)
             Double::class -> setDouble(env, value as Double, instance)
             Boolean::class -> setBoolean(env, value as Boolean, instance)
-            JvmObject::class -> setObject(env, value as JvmObject, instance)
+            JvmObject::class, JvmString::class, JvmClass::class -> setObject(
+                env,
+                value as JvmObject,
+                instance
+            )
+
             else -> throw IllegalArgumentException("Unsupported field type")
         }
     }
 
-    fun getInstance(env: JNIEnvVar): JvmObject =
+    fun getInstance(env: JniEnvironment): JvmObject =
         JvmObject.fromHandle(
             env.pointed?.ToReflectedField?.invoke(
                 env.ptr,
@@ -284,17 +301,37 @@ class JvmField(
             )
         )
 
-    fun getVisibility(env: JNIEnvVar): JvmVisibility = jniScoped(env) {
-        JvmClass.find(Type.FIELD).let { fieldClass ->
-            fieldClass.findMethod {
-                name = "getModifiers"
-                returnType = PrimitiveType.INT
-                callType = CallType.DIRECT
-            }.callInt(instance).toUShort().let { modifiers ->
-                JvmVisibility.entries.find {
-                    modifiers and it.jvmValue == it.jvmValue
-                } ?: JvmVisibility.PRIVATE
-            }
+    fun getVisibility(env: JniEnvironment): JvmVisibility = jniScoped(env) {
+        JvmClass.find(Type.FIELD).findMethod {
+            name = "getModifiers"
+            returnType = PrimitiveType.INT
+            callType = CallType.DIRECT
+        }.callInt(instance).toUShort().let { modifiers ->
+            JvmVisibility.entries.find {
+                modifiers and it.jvmValue == it.jvmValue
+            } ?: JvmVisibility.PRIVATE
+        }
+    }
+
+    fun hasAnnotation(env: JniEnvironment, type: Type): Boolean = jniScoped(env) {
+        JvmClass.find(Type.FIELD).findMethod {
+            name = "isAnnotationPresent"
+            returnType = PrimitiveType.BOOLEAN
+            parameterTypes += Type.CLASS
+            callType = CallType.DIRECT
+        }.callBoolean(instance) {
+            put(JvmClass.find(type))
+        }
+    }
+
+    fun getAnnotation(env: JniEnvironment, type: Type): JvmObject = jniScoped(env) {
+        JvmClass.find(Type.FIELD).findMethod {
+            name = "getAnnotation"
+            returnType = type
+            parameterTypes += Type.CLASS
+            callType = CallType.DIRECT
+        }.callObject(instance) {
+            put(JvmClass.find(type))
         }
     }
 }

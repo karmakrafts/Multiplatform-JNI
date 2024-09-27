@@ -18,9 +18,7 @@
 
 package io.karma.jni
 
-import jni.JNIEnvVar
-import jni.jmethodID
-import jni.jvalue
+import io.karma.jni.JvmObject.Companion.cast
 import kotlinx.cinterop.CPointer
 import kotlinx.cinterop.ExperimentalForeignApi
 import kotlinx.cinterop.MemScope
@@ -97,50 +95,50 @@ class ArgumentScope(
 
     fun put(value: Byte) {
         require(descriptor.parameterTypes[index] == PrimitiveType.BYTE) { "Parameter type mismatch" }
-        interpretCPointer<jvalue>(address.rawPtr + index * sizeOf<jvalue>())?.pointed?.b = value
+        interpretCPointer<JvmValue>(address.rawPtr + index * sizeOf<JvmValue>())?.pointed?.b = value
         index++
     }
 
     fun put(value: Short) {
         require(descriptor.parameterTypes[index] == PrimitiveType.SHORT) { "Parameter type mismatch" }
-        interpretCPointer<jvalue>(address.rawPtr + index * sizeOf<jvalue>())?.pointed?.s = value
+        interpretCPointer<JvmValue>(address.rawPtr + index * sizeOf<JvmValue>())?.pointed?.s = value
         index++
     }
 
     fun put(value: Int) {
         require(descriptor.parameterTypes[index] == PrimitiveType.INT) { "Parameter type mismatch" }
-        interpretCPointer<jvalue>(address.rawPtr + index * sizeOf<jvalue>())?.pointed?.i = value
+        interpretCPointer<JvmValue>(address.rawPtr + index * sizeOf<JvmValue>())?.pointed?.i = value
         index++
     }
 
     fun put(value: Long) {
         require(descriptor.parameterTypes[index] == PrimitiveType.LONG) { "Parameter type mismatch" }
-        interpretCPointer<jvalue>(address.rawPtr + index * sizeOf<jvalue>())?.pointed?.j = value
+        interpretCPointer<JvmValue>(address.rawPtr + index * sizeOf<JvmValue>())?.pointed?.j = value
         index++
     }
 
     fun put(value: Float) {
         require(descriptor.parameterTypes[index] == PrimitiveType.FLOAT) { "Parameter type mismatch" }
-        interpretCPointer<jvalue>(address.rawPtr + index * sizeOf<jvalue>())?.pointed?.f = value
+        interpretCPointer<JvmValue>(address.rawPtr + index * sizeOf<JvmValue>())?.pointed?.f = value
         index++
     }
 
     fun put(value: Double) {
         require(descriptor.parameterTypes[index] == PrimitiveType.DOUBLE) { "Parameter type mismatch" }
-        interpretCPointer<jvalue>(address.rawPtr + index * sizeOf<jvalue>())?.pointed?.d = value
+        interpretCPointer<JvmValue>(address.rawPtr + index * sizeOf<JvmValue>())?.pointed?.d = value
         index++
     }
 
     fun put(value: Boolean) {
         require(descriptor.parameterTypes[index] == PrimitiveType.BOOLEAN) { "Parameter type mismatch" }
-        interpretCPointer<jvalue>(address.rawPtr + index * sizeOf<jvalue>())?.pointed?.z =
+        interpretCPointer<JvmValue>(address.rawPtr + index * sizeOf<JvmValue>())?.pointed?.z =
             value.toJBoolean()
         index++
     }
 
     fun put(value: JvmObject) {
         require(descriptor.parameterTypes[index] !is PrimitiveType) { "Parameter type mismatch" }
-        interpretCPointer<jvalue>(address.rawPtr + index * sizeOf<jvalue>())?.pointed?.l =
+        interpretCPointer<JvmValue>(address.rawPtr + index * sizeOf<JvmValue>())?.pointed?.l =
             value.handle
         index++
     }
@@ -149,19 +147,19 @@ class ArgumentScope(
 class JvmMethod(
     val enclosingClass: JvmClass,
     val descriptor: MethodDescriptor,
-    val id: jmethodID,
+    val id: JvmMethodId,
 ) : MethodDescriptor by descriptor {
-    inline fun MemScope.allocArgs(closure: ArgumentScope.() -> Unit): CPointer<jvalue>? {
+    inline fun MemScope.allocArgs(closure: ArgumentScope.() -> Unit): CPointer<JvmValue>? {
         return interpretCPointer(
             ArgumentScope(
-                alloc(sizeOf<jvalue>() * descriptor.parameterTypes.size),
+                alloc(sizeOf<JvmValue>() * descriptor.parameterTypes.size),
                 descriptor
             ).apply(closure).address.rawPtr
         )
     }
 
     inline fun callByte(
-        env: JNIEnvVar,
+        env: JniEnvironment,
         instance: JvmObject = JvmObject.NULL,
         args: ArgumentScope.() -> Unit = {}
     ): Byte {
@@ -181,7 +179,7 @@ class JvmMethod(
     }
 
     inline fun callShort(
-        env: JNIEnvVar,
+        env: JniEnvironment,
         instance: JvmObject = JvmObject.NULL,
         args: ArgumentScope.() -> Unit = {}
     ): Short {
@@ -201,7 +199,7 @@ class JvmMethod(
     }
 
     inline fun callInt(
-        env: JNIEnvVar,
+        env: JniEnvironment,
         instance: JvmObject = JvmObject.NULL,
         args: ArgumentScope.() -> Unit = {}
     ): Int {
@@ -221,7 +219,7 @@ class JvmMethod(
     }
 
     inline fun callLong(
-        env: JNIEnvVar,
+        env: JniEnvironment,
         instance: JvmObject = JvmObject.NULL,
         args: ArgumentScope.() -> Unit = {}
     ): Long {
@@ -241,7 +239,7 @@ class JvmMethod(
     }
 
     inline fun callFloat(
-        env: JNIEnvVar,
+        env: JniEnvironment,
         instance: JvmObject = JvmObject.NULL,
         args: ArgumentScope.() -> Unit = {}
     ): Float {
@@ -261,7 +259,7 @@ class JvmMethod(
     }
 
     inline fun callDouble(
-        env: JNIEnvVar,
+        env: JniEnvironment,
         instance: JvmObject = JvmObject.NULL,
         args: ArgumentScope.() -> Unit = {}
     ): Double {
@@ -281,7 +279,7 @@ class JvmMethod(
     }
 
     inline fun callBoolean(
-        env: JNIEnvVar,
+        env: JniEnvironment,
         instance: JvmObject = JvmObject.NULL,
         args: ArgumentScope.() -> Unit = {}
     ): Boolean {
@@ -301,7 +299,7 @@ class JvmMethod(
     }
 
     inline fun callObject(
-        env: JNIEnvVar,
+        env: JniEnvironment,
         instance: JvmObject = JvmObject.NULL,
         args: ArgumentScope.() -> Unit = {}
     ): JvmObject {
@@ -321,9 +319,15 @@ class JvmMethod(
         }
     }
 
+    inline fun <reified R : JvmObject> callObject(
+        env: JniEnvironment,
+        instance: JvmObject = JvmObject.NULL,
+        args: ArgumentScope.() -> Unit = {}
+    ): R = callObject(env, instance, args).cast(env)
+
     @Suppress("IMPLICIT_CAST_TO_ANY")
     inline fun <reified R> call(
-        env: JNIEnvVar,
+        env: JniEnvironment,
         instance: JvmObject = JvmObject.NULL,
         closure: ArgumentScope.() -> Unit = {}
     ): R {
@@ -336,11 +340,13 @@ class JvmMethod(
             Double::class -> callDouble(env, instance, closure)
             Boolean::class -> callBoolean(env, instance, closure)
             JvmObject::class -> callObject(env, instance, closure)
+            JvmString::class -> callObject(env, instance, closure).cast(env)
+            JvmClass::class -> callObject(env, instance, closure).cast(env)
             else -> throw IllegalArgumentException("Unsupported return type")
         } as R
     }
 
-    fun getInstance(env: JNIEnvVar): JvmObject =
+    fun getInstance(env: JniEnvironment): JvmObject =
         JvmObject.fromHandle(
             env.pointed?.ToReflectedMethod?.invoke(
                 env.ptr,
@@ -350,17 +356,37 @@ class JvmMethod(
             )
         )
 
-    fun getVisibility(env: JNIEnvVar): JvmVisibility = jniScoped(env) {
-        JvmClass.find(Type.METHOD).let { methodClass ->
-            methodClass.findMethod {
-                name = "getModifiers"
-                returnType = PrimitiveType.INT
-                callType = CallType.DIRECT
-            }.callInt(instance).toUShort().let { modifiers ->
-                JvmVisibility.entries.find {
-                    modifiers and it.jvmValue == it.jvmValue
-                } ?: JvmVisibility.PRIVATE
-            }
+    fun getVisibility(env: JniEnvironment): JvmVisibility = jniScoped(env) {
+        JvmClass.find(Type.METHOD).findMethod {
+            name = "getModifiers"
+            returnType = PrimitiveType.INT
+            callType = CallType.DIRECT
+        }.callInt(instance).toUShort().let { modifiers ->
+            JvmVisibility.entries.find {
+                modifiers and it.jvmValue == it.jvmValue
+            } ?: JvmVisibility.PRIVATE
+        }
+    }
+
+    fun hasAnnotation(env: JniEnvironment, type: Type): Boolean = jniScoped(env) {
+        JvmClass.find(Type.METHOD).findMethod {
+            name = "isAnnotationPresent"
+            returnType = PrimitiveType.BOOLEAN
+            parameterTypes += Type.CLASS
+            callType = CallType.DIRECT
+        }.callBoolean(instance) {
+            put(JvmClass.find(type))
+        }
+    }
+
+    fun getAnnotation(env: JniEnvironment, type: Type): JvmObject = jniScoped(env) {
+        JvmClass.find(Type.METHOD).findMethod {
+            name = "getAnnotation"
+            returnType = type
+            parameterTypes += Type.CLASS
+            callType = CallType.DIRECT
+        }.callObject(instance) {
+            put(JvmClass.find(type))
         }
     }
 }

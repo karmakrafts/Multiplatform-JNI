@@ -19,11 +19,10 @@
 package io.karma.jni
 
 import io.karma.jni.JvmObject.Companion.cast
-import jni.JNIEnvVar
 import jni.jstring
 import kotlinx.cinterop.ExperimentalForeignApi
 
-value class JniScope(val env: JNIEnvVar) {
+value class JniScope(val env: JniEnvironment) {
     fun jstring.toKString(): String = toKString(env)
     fun String.toJString(): jstring = toJString(env)
 
@@ -55,6 +54,10 @@ value class JniScope(val env: JNIEnvVar) {
         get() = getType(env)
     val JvmClass.visibility: JvmVisibility
         get() = getVisibility(env)
+    val JvmClass.fields: List<JvmField>
+        get() = getFields(env)
+    val JvmClass.methods: List<JvmMethod>
+        get() = getMethods(env)
 
     fun JvmField.getByte(instance: JvmObject = JvmObject.NULL): Byte = getByte(env, instance)
     fun JvmField.getShort(instance: JvmObject = JvmObject.NULL): Short = getShort(env, instance)
@@ -81,6 +84,9 @@ value class JniScope(val env: JNIEnvVar) {
         get() = getInstance(env)
     val JvmField.visibility: JvmVisibility
         get() = getVisibility(env)
+
+    fun JvmField.hasAnnotation(type: Type): Boolean = hasAnnotation(env, type)
+    fun JvmField.getAnnotation(type: Type): JvmObject = getAnnotation(env, type)
 
     fun JvmMethod.callByte(
         instance: JvmObject = JvmObject.NULL,
@@ -132,6 +138,9 @@ value class JniScope(val env: JNIEnvVar) {
     val JvmMethod.visibility: JvmVisibility
         get() = getVisibility(env)
 
+    fun JvmMethod.hasAnnotation(type: Type): Boolean = hasAnnotation(env, type)
+    fun JvmMethod.getAnnotation(type: Type): JvmObject = getAnnotation(env, type)
+
     fun JvmObject.createGlobalRef(): JvmObjectRef = createGlobalRef(env)
     fun JvmObject.createLocalRef(): JvmObjectRef = createLocalRef(env)
     fun JvmObject.createWeakRef(): JvmObjectRef = createWeakRef(env)
@@ -160,6 +169,6 @@ inline fun <reified R> jniScoped(scope: JniScope.() -> R): R {
     return result
 }
 
-inline fun <reified R> jniScoped(env: JNIEnvVar, scope: JniScope.() -> R): R {
+inline fun <reified R> jniScoped(env: JniEnvironment, scope: JniScope.() -> R): R {
     return scope(JniScope(env))
 }

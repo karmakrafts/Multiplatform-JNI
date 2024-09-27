@@ -20,12 +20,7 @@ package io.karma.jni
 
 import co.touchlab.stately.concurrency.ThreadLocalRef
 import co.touchlab.stately.concurrency.value
-import jni.JNIEnvVar
-import jni.JNI_ERR
-import jni.JNI_OK
 import jni.JNI_VERSION_1_8
-import jni.JavaVMVar
-import jni.jint
 import kotlinx.cinterop.ByteVar
 import kotlinx.cinterop.COpaquePointer
 import kotlinx.cinterop.CPointer
@@ -49,17 +44,17 @@ import kotlin.native.internal.NativePtr
 
 object JniPlatform {
     private val vmAddress: AtomicNativePtr = AtomicNativePtr(NativePtr.NULL)
-    var vm: JavaVMVar?
-        get() = interpretCPointer<JavaVMVar>(vmAddress.value)?.pointed
+    var vm: JavaVm?
+        get() = interpretCPointer<JavaVm>(vmAddress.value)?.pointed
         set(value) {
             vmAddress.value = value?.rawPtr ?: NativePtr.NULL
         }
-    var environment: ThreadLocalRef<JNIEnvVar?> = ThreadLocalRef()
+    var environment: ThreadLocalRef<JniEnvironment?> = ThreadLocalRef()
 
-    fun attach(): JNIEnvVar? {
+    fun attach(): JniEnvironment? {
         return if (environment.value != null) environment.value
         else memScoped {
-            val envAddress = allocPointerTo<JNIEnvVar>()
+            val envAddress = allocPointerTo<JniEnvironment>()
             if (vm?.pointed?.AttachCurrentThread?.invoke(
                     vm?.ptr,
                     envAddress.ptr.reinterpret(),
@@ -80,12 +75,12 @@ object JniPlatform {
 
 @Suppress("UNUSED_PARAMETER", "UNUSED")
 @CName("JNI_OnLoad")
-fun jniOnLoad(vm: JavaVMVar, reserved: COpaquePointer): jint {
+fun jniOnLoad(vm: JavaVm, reserved: COpaquePointer): JvmInt {
     JniPlatform.let { platform ->
         platform.vm = vm
         return vm.pointed?.let {
             memScoped {
-                val address = allocPointerTo<JNIEnvVar>()
+                val address = allocPointerTo<JniEnvironment>()
                 it.GetEnv?.invoke(
                     vm.ptr,
                     address.ptr.reinterpret(),

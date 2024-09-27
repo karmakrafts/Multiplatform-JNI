@@ -18,8 +18,6 @@
 
 package io.karma.jni
 
-import jni.JNIEnvVar
-import jni.jstring
 import kotlinx.cinterop.ExperimentalForeignApi
 import kotlinx.cinterop.invoke
 import kotlinx.cinterop.memScoped
@@ -27,7 +25,7 @@ import kotlinx.cinterop.pointed
 import kotlinx.cinterop.ptr
 import kotlinx.cinterop.toKString
 
-fun jstring.toKStringOrNull(env: JNIEnvVar): String? {
+fun JvmStringHandle.toKStringOrNull(env: JniEnvironment): String? {
     val data = env.pointed?.GetStringUTFChars?.invoke(
         env.ptr,
         this@toKStringOrNull,
@@ -42,10 +40,10 @@ fun jstring.toKStringOrNull(env: JNIEnvVar): String? {
     return result
 }
 
-fun jstring.toKString(env: JNIEnvVar): String =
+fun JvmStringHandle.toKString(env: JniEnvironment): String =
     requireNotNull(toKStringOrNull(env)) { "Could not convert JVM to native string" }
 
-fun String.toJStringOrNull(env: JNIEnvVar): jstring? {
+fun String.toJStringOrNull(env: JniEnvironment): JvmStringHandle? {
     return memScoped {
         env.pointed?.NewStringUTF?.invoke(
             env.ptr,
@@ -54,29 +52,30 @@ fun String.toJStringOrNull(env: JNIEnvVar): jstring? {
     }
 }
 
-fun String.toJString(env: JNIEnvVar): jstring =
+fun String.toJString(env: JniEnvironment): JvmStringHandle =
     requireNotNull(toJStringOrNull(env)) { "Could not convert native to JVM string" }
 
 value class JvmString private constructor(
-    override val handle: jstring?
+    override val handle: JvmStringHandle?
 ) : JvmObject {
     companion object {
         val NULL: JvmString = JvmString(null)
 
-        fun fromHandle(handle: jstring?): JvmString {
+        fun fromHandle(handle: JvmStringHandle?): JvmString {
             return if (handle == null) NULL
             else JvmString(handle)
         }
 
         fun fromUnchecked(obj: JvmObject): JvmString = fromHandle(obj.handle)
 
-        fun of(env: JNIEnvVar, value: String): JvmString {
+        fun of(env: JniEnvironment, value: String): JvmString {
             return memScoped {
                 fromHandle(env.pointed?.NewStringUTF?.invoke(env.ptr, allocCString(value)))
             }
         }
     }
 
-    fun get(env: JNIEnvVar): String? = handle?.toKStringOrNull(env)
-    fun getLength(env: JNIEnvVar): Int = env.pointed?.GetStringLength?.invoke(env.ptr, handle) ?: 0
+    fun get(env: JniEnvironment): String? = handle?.toKStringOrNull(env)
+    fun getLength(env: JniEnvironment): Int =
+        env.pointed?.GetStringLength?.invoke(env.ptr, handle) ?: 0
 }
