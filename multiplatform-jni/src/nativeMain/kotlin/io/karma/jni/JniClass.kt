@@ -19,6 +19,8 @@
 package io.karma.jni
 
 import co.touchlab.stately.collections.ConcurrentMutableMap
+import io.karma.jni.MethodDescriptor.Companion.allocNativeMethod
+import kotlinx.cinterop.COpaquePointer
 import kotlinx.cinterop.ExperimentalForeignApi
 import kotlinx.cinterop.invoke
 import kotlinx.cinterop.memScoped
@@ -27,7 +29,7 @@ import kotlinx.cinterop.ptr
 
 class JvmClass internal constructor(
     override val handle: JvmClassHandle?
-) : JvmObject {
+) : JvmObject, VisibilityProvider, AnnotationProvider {
     internal val fields: ConcurrentMutableMap<FieldDescriptor, JvmField> = ConcurrentMutableMap()
     internal val methods: ConcurrentMutableMap<MethodDescriptor, JvmMethod> = ConcurrentMutableMap()
 
@@ -134,7 +136,7 @@ class JvmClass internal constructor(
             ?: NullType
     }
 
-    fun hasAnnotation(env: JniEnvironment, type: Type): Boolean = jniScoped(env) {
+    override fun hasAnnotation(env: JniEnvironment, type: Type): Boolean = jniScoped(env) {
         require(type.typeClass == TypeClass.OBJECT) { "Annotation must be class type" }
         findMethod {
             name = "isAnnotationPresent"
@@ -146,7 +148,7 @@ class JvmClass internal constructor(
         }
     }
 
-    fun getAnnotation(env: JniEnvironment, type: Type): JvmObject = jniScoped(env) {
+    override fun getAnnotation(env: JniEnvironment, type: Type): JvmObject = jniScoped(env) {
         require(type.typeClass == TypeClass.OBJECT) { "Annotation must be class type" }
         findMethod {
             name = "getAnnotation"
@@ -158,7 +160,7 @@ class JvmClass internal constructor(
         }
     }
 
-    fun getVisibility(env: JniEnvironment): JvmVisibility = jniScoped(env) {
+    override fun getVisibility(env: JniEnvironment): JvmVisibility = jniScoped(env) {
         findMethod {
             name = "getModifiers"
             returnType = PrimitiveType.INT
@@ -171,10 +173,36 @@ class JvmClass internal constructor(
     }
 
     fun getFields(env: JniEnvironment): List<JvmField> = jniScoped(env) {
-        emptyList()
+        return emptyList() // TODO
     }
 
     fun getMethods(env: JniEnvironment): List<JvmMethod> = jniScoped(env) {
-        emptyList()
+        return emptyList() // TODO
     }
+
+    fun getComponentTypeClass(env: JniEnvironment): JvmClass = jniScoped(env) {
+        findMethod {
+            name = "getComponentType"
+            returnType = Type.CLASS
+        }.callObject().cast()
+    }
+
+    fun registerNativeMethod(
+        env: JniEnvironment,
+        address: COpaquePointer,
+        descriptor: MethodDescriptor,
+    ) = memScoped {
+        env.pointed?.RegisterNatives?.invoke(
+            env.ptr,
+            handle,
+            allocNativeMethod(env, descriptor, address),
+            1 // We always register one method at a time
+        )
+    }
+
+    fun registerNativeMethod(
+        env: JniEnvironment,
+        address: COpaquePointer,
+        closure: MethodDescriptorBuilder.() -> Unit,
+    ) = registerNativeMethod(env, address, MethodDescriptor.create(closure))
 }

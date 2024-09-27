@@ -40,6 +40,7 @@ interface JvmObject {
                 JvmObject::class, JvmObjectRef::class -> this
                 JvmString::class -> JvmString.fromUnchecked(cast(env, Type.STRING))
                 JvmClass::class -> JvmClass.fromUnchecked(cast(env, Type.CLASS))
+                JvmArray::class -> JvmArray.fromUnchecked(this) // We can't do any checked casts here..
                 else -> throw IllegalArgumentException("Unsupported type conversion $this -> ${T::class}")
             } as T
         }
@@ -97,7 +98,7 @@ interface JvmObject {
         isInstance(env, clazz.getType(env))
 
     fun toKString(env: JniEnvironment): String = jniScoped(env) {
-        getTypeClass().findMethod {
+        typeClass.findMethod {
             name = "toString"
             returnType = Type.STRING
         }.callObject(this@JvmObject)

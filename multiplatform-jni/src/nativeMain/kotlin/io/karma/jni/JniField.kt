@@ -24,6 +24,7 @@ import kotlinx.cinterop.convert
 import kotlinx.cinterop.invoke
 import kotlinx.cinterop.pointed
 import kotlinx.cinterop.ptr
+import kotlin.experimental.ExperimentalNativeApi
 
 interface FieldDescriptor {
     val name: String
@@ -70,7 +71,7 @@ class JvmField(
     val enclosingClass: JvmClass,
     val descriptor: FieldDescriptor,
     val id: JvmFieldId,
-) : FieldDescriptor by descriptor {
+) : FieldDescriptor by descriptor, VisibilityProvider, AnnotationProvider {
     // Getters
 
     fun getByte(env: JniEnvironment, instance: JvmObject = JvmObject.NULL): Byte {
@@ -140,6 +141,20 @@ class JvmField(
             ?: false
     }
 
+    @OptIn(ExperimentalNativeApi::class)
+    fun getChar(env: JniEnvironment, instance: JvmObject = JvmObject.NULL): Char {
+        if (descriptor.isStatic) {
+            return Char.toChars(
+                env.pointed?.GetStaticCharField?.invoke(env.ptr, enclosingClass.handle, id)?.toInt()
+                    ?: 0
+            )[0]
+        }
+        require(!instance.isNull()) { "Instance must not be null for non-static fields" }
+        return Char.toChars(
+            env.pointed?.GetCharField?.invoke(env.ptr, instance.handle, id)?.toInt() ?: 0
+        )[0]
+    }
+
     fun getObject(env: JniEnvironment, instance: JvmObject = JvmObject.NULL): JvmObject {
         if (descriptor.isStatic) {
             return JvmObject.fromHandle(
@@ -177,9 +192,11 @@ class JvmField(
             Float::class -> getFloat(env, instance)
             Double::class -> getDouble(env, instance)
             Boolean::class -> getBoolean(env, instance)
+            Char::class -> getChar(env, instance)
             JvmObject::class -> getObject(env, instance)
             JvmString::class -> getObject(env, instance).cast(env)
             JvmClass::class -> getObject(env, instance).cast(env)
+            JvmArray::class -> JvmArray.fromUnchecked(getObject(env, instance))
             else -> throw IllegalArgumentException("Unsupported field type")
         } as R
     }
@@ -254,6 +271,20 @@ class JvmField(
         env.pointed?.SetBooleanField?.invoke(env.ptr, instance.handle, id, value.toJBoolean())
     }
 
+    fun setChar(env: JniEnvironment, value: Char, instance: JvmObject = JvmObject.NULL) {
+        if (descriptor.isStatic) {
+            env.pointed?.SetStaticCharField?.invoke(
+                env.ptr,
+                enclosingClass.handle,
+                id,
+                value.code.toUShort()
+            )
+            return
+        }
+        require(!instance.isNull()) { "Instance must not be null for non-static fields" }
+        env.pointed?.SetCharField?.invoke(env.ptr, instance.handle, id, value.code.toUShort())
+    }
+
     fun setObject(env: JniEnvironment, value: JvmObject, instance: JvmObject = JvmObject.NULL) {
         if (descriptor.isStatic) {
             env.pointed?.SetStaticObjectField?.invoke(
@@ -281,7 +312,8 @@ class JvmField(
             Float::class -> setFloat(env, value as Float, instance)
             Double::class -> setDouble(env, value as Double, instance)
             Boolean::class -> setBoolean(env, value as Boolean, instance)
-            JvmObject::class, JvmString::class, JvmClass::class -> setObject(
+            Char::class -> setChar(env, value as Char, instance)
+            JvmObject::class, JvmString::class, JvmClass::class, JvmArray::class -> setObject(
                 env,
                 value as JvmObject,
                 instance
@@ -301,7 +333,7 @@ class JvmField(
             )
         )
 
-    fun getVisibility(env: JniEnvironment): JvmVisibility = jniScoped(env) {
+    override fun getVisibility(env: JniEnvironment): JvmVisibility = jniScoped(env) {
         JvmClass.find(Type.FIELD).findMethod {
             name = "getModifiers"
             returnType = PrimitiveType.INT
@@ -313,7 +345,7 @@ class JvmField(
         }
     }
 
-    fun hasAnnotation(env: JniEnvironment, type: Type): Boolean = jniScoped(env) {
+    override fun hasAnnotation(env: JniEnvironment, type: Type): Boolean = jniScoped(env) {
         JvmClass.find(Type.FIELD).findMethod {
             name = "isAnnotationPresent"
             returnType = PrimitiveType.BOOLEAN
@@ -324,7 +356,7 @@ class JvmField(
         }
     }
 
-    fun getAnnotation(env: JniEnvironment, type: Type): JvmObject = jniScoped(env) {
+    override fun getAnnotation(env: JniEnvironment, type: Type): JvmObject = jniScoped(env) {
         JvmClass.find(Type.FIELD).findMethod {
             name = "getAnnotation"
             returnType = type

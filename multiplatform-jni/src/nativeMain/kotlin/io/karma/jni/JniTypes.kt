@@ -120,7 +120,7 @@ internal class ArrayType(
     val dimensions: Int = 1
 ) : Type {
     override val name: String = "Array<${valueType.name}>"
-    override val jvmDescriptor: String = "[${valueType.jvmDescriptor}"
+    override val jvmDescriptor: String = "${"[".repeat(dimensions)}${valueType.jvmDescriptor}"
     override val size: Int = valueType.size * dimensions
     override val typeClass: TypeClass = TypeClass.ARRAY
 

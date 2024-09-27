@@ -20,11 +20,28 @@ package io.karma.jni
 
 import io.karma.jni.JvmObject.Companion.cast
 import jni.jstring
+import kotlinx.cinterop.COpaquePointer
 import kotlinx.cinterop.ExperimentalForeignApi
 
 value class JniScope(val env: JniEnvironment) {
     fun jstring.toKString(): String = toKString(env)
     fun String.toJString(): jstring = toJString(env)
+
+    val VisibilityProvider.visibility: JvmVisibility
+        get() = getVisibility(env)
+
+    fun AnnotationProvider.hasAnnotation(type: Type): Boolean = hasAnnotation(env, type)
+    fun AnnotationProvider.getAnnotation(type: Type): JvmObject = getAnnotation(env, type)
+
+    fun JvmClass.registerNativeMethod(
+        address: COpaquePointer,
+        descriptor: MethodDescriptor,
+    ) = registerNativeMethod(env, address, descriptor)
+
+    fun JvmClass.registerNativeMethod(
+        address: COpaquePointer,
+        closure: MethodDescriptorBuilder.() -> Unit,
+    ) = registerNativeMethod(env, address, closure)
 
     // @formatter:off
     fun JvmClass.Companion.findOrNull(type: Type): JvmClass? =
@@ -47,13 +64,10 @@ value class JniScope(val env: JniEnvironment) {
     fun JvmClass.findMethod(closure: MethodDescriptorBuilder.() -> Unit): JvmMethod =
         findMethod(env, closure)
 
-    fun JvmClass.hasAnnotation(type: Type): Boolean = hasAnnotation(env, type)
-    fun JvmClass.getAnnotation(type: Type): JvmObject = getAnnotation(env, type)
-
     val JvmClass.type: Type
         get() = getType(env)
-    val JvmClass.visibility: JvmVisibility
-        get() = getVisibility(env)
+    val JvmClass.componentTypeClass: JvmClass
+        get() = getComponentTypeClass(env)
     val JvmClass.fields: List<JvmField>
         get() = getFields(env)
     val JvmClass.methods: List<JvmMethod>
@@ -66,6 +80,7 @@ value class JniScope(val env: JniEnvironment) {
     fun JvmField.getFloat(instance: JvmObject = JvmObject.NULL): Float = getFloat(env, instance)
     fun JvmField.getDouble(instance: JvmObject = JvmObject.NULL): Double = getDouble(env, instance)
     fun JvmField.getBoolean(instance: JvmObject = JvmObject.NULL): Boolean = getBoolean(env, instance)
+    fun JvmField.getChar(instance: JvmObject = JvmObject.NULL): Char = getChar(env, instance)
     fun JvmField.getObject(instance: JvmObject = JvmObject.NULL): JvmObject = getObject(env, instance)
     inline fun <reified R> JvmField.get(instance: JvmObject = JvmObject.NULL): R = get<R>(env, instance)
 
@@ -76,17 +91,13 @@ value class JniScope(val env: JniEnvironment) {
     fun JvmField.setFloat(value: Float, instance: JvmObject = JvmObject.NULL) = setFloat(env, value, instance)
     fun JvmField.setDouble(value: Double, instance: JvmObject = JvmObject.NULL) = setDouble(env, value, instance)
     fun JvmField.setBoolean(value: Boolean, instance: JvmObject = JvmObject.NULL) = setBoolean(env, value, instance)
+    fun JvmField.setChar(value: Char, instance: JvmObject = JvmObject.NULL) = setChar(env, value, instance)
     fun JvmField.setObject(value: JvmObject, instance: JvmObject = JvmObject.NULL) = setObject(env, value, instance)
     inline fun <reified R> JvmField.set(value: R, instance: JvmObject = JvmObject.NULL) = set<R>(env, value, instance)
     // @formatter:on
 
     val JvmField.instance: JvmObject
         get() = getInstance(env)
-    val JvmField.visibility: JvmVisibility
-        get() = getVisibility(env)
-
-    fun JvmField.hasAnnotation(type: Type): Boolean = hasAnnotation(env, type)
-    fun JvmField.getAnnotation(type: Type): JvmObject = getAnnotation(env, type)
 
     fun JvmMethod.callByte(
         instance: JvmObject = JvmObject.NULL,
@@ -123,6 +134,11 @@ value class JniScope(val env: JniEnvironment) {
         closure: ArgumentScope.() -> Unit = {}
     ): Boolean = callBoolean(env, instance, closure)
 
+    fun JvmMethod.callChar(
+        instance: JvmObject = JvmObject.NULL,
+        closure: ArgumentScope.() -> Unit = {}
+    ): Char = callChar(env, instance, closure)
+
     fun JvmMethod.callObject(
         instance: JvmObject = JvmObject.NULL,
         closure: ArgumentScope.() -> Unit = {}
@@ -135,16 +151,13 @@ value class JniScope(val env: JniEnvironment) {
 
     val JvmMethod.instance: JvmObject
         get() = getInstance(env)
-    val JvmMethod.visibility: JvmVisibility
-        get() = getVisibility(env)
 
-    fun JvmMethod.hasAnnotation(type: Type): Boolean = hasAnnotation(env, type)
-    fun JvmMethod.getAnnotation(type: Type): JvmObject = getAnnotation(env, type)
+    val JvmObject.typeClass: JvmClass
+        get() = getTypeClass(env)
 
     fun JvmObject.createGlobalRef(): JvmObjectRef = createGlobalRef(env)
     fun JvmObject.createLocalRef(): JvmObjectRef = createLocalRef(env)
     fun JvmObject.createWeakRef(): JvmObjectRef = createWeakRef(env)
-    fun JvmObject.getTypeClass(): JvmClass = getTypeClass(env)
     fun JvmObject.cast(type: Type): JvmObject = cast(env, type)
     fun JvmObject.cast(clazz: JvmClass): JvmObject = cast(env, clazz)
     fun JvmObject.isInstance(type: Type): Boolean = isInstance(env, type)
@@ -159,6 +172,35 @@ value class JniScope(val env: JniEnvironment) {
     val JvmString.value: String?
         get() = get(env)
     val JvmString.length: Int
+        get() = getLength(env)
+
+    fun JvmArray.setByte(index: Int, value: Byte) = setByte(env, index, value)
+    fun JvmArray.setShort(index: Int, value: Short) = setShort(env, index, value)
+    fun JvmArray.setInt(index: Int, value: Int) = setInt(env, index, value)
+    fun JvmArray.setLong(index: Int, value: Long) = setLong(env, index, value)
+    fun JvmArray.setFloat(index: Int, value: Float) = setFloat(env, index, value)
+    fun JvmArray.setDouble(index: Int, value: Double) = setDouble(env, index, value)
+    fun JvmArray.setBoolean(index: Int, value: Boolean) = setBoolean(env, index, value)
+    fun JvmArray.setChar(index: Int, value: Char) = setChar(env, index, value)
+    fun JvmArray.setObject(index: Int, value: JvmObject) = setObject(env, index, value)
+
+    inline operator fun <reified R> JvmArray.set(index: Int, value: R) = set<R>(env, index, value)
+
+    fun JvmArray.getByte(index: Int): Byte = getByte(env, index)
+    fun JvmArray.getShort(index: Int): Short = getShort(env, index)
+    fun JvmArray.getInt(index: Int): Int = getInt(env, index)
+    fun JvmArray.getLong(index: Int): Long = getLong(env, index)
+    fun JvmArray.getFloat(index: Int): Float = getFloat(env, index)
+    fun JvmArray.getDouble(index: Int): Double = getDouble(env, index)
+    fun JvmArray.getBoolean(index: Int): Boolean = getBoolean(env, index)
+    fun JvmArray.getChar(index: Int): Char = getChar(env, index)
+    fun JvmArray.getObject(index: Int): JvmObject = getObject(env, index)
+
+    inline operator fun <reified R> JvmArray.get(index: Int): R = get<R>(env, index)
+
+    val JvmArray.componentTypeClass: JvmClass
+        get() = getComponentTypeClass(env)
+    val JvmArray.length: Int
         get() = getLength(env)
 }
 

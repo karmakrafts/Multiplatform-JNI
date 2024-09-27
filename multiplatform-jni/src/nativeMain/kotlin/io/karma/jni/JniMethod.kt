@@ -19,17 +19,21 @@
 package io.karma.jni
 
 import io.karma.jni.JvmObject.Companion.cast
+import kotlinx.cinterop.COpaquePointer
 import kotlinx.cinterop.CPointer
 import kotlinx.cinterop.ExperimentalForeignApi
 import kotlinx.cinterop.MemScope
 import kotlinx.cinterop.NativePointed
 import kotlinx.cinterop.alloc
+import kotlinx.cinterop.allocPointerTo
 import kotlinx.cinterop.interpretCPointer
 import kotlinx.cinterop.invoke
 import kotlinx.cinterop.memScoped
 import kotlinx.cinterop.pointed
 import kotlinx.cinterop.ptr
 import kotlinx.cinterop.sizeOf
+import kotlinx.cinterop.value
+import kotlin.experimental.ExperimentalNativeApi
 
 enum class CallType {
     STATIC,
@@ -42,6 +46,21 @@ interface MethodDescriptor {
         fun create(closure: MethodDescriptorBuilder.() -> Unit): MethodDescriptor {
             return MethodDescriptorBuilder().apply(closure).build()
         }
+
+        internal fun MemScope.allocNativeMethod(
+            env: JniEnvironment,
+            descriptor: MethodDescriptor,
+            address: COpaquePointer,
+        ): CPointer<JvmNativeMethod>? =
+            jniScoped(env) {
+                allocPointerTo<JvmNativeMethod>().apply {
+                    pointed = alloc<JvmNativeMethod> {
+                        fnPtr = address
+                        name = allocCString(descriptor.name)
+                        signature = allocCString(descriptor.jvmDescriptor)
+                    }
+                }.value
+            }
     }
 
     val name: String
@@ -148,7 +167,7 @@ class JvmMethod(
     val enclosingClass: JvmClass,
     val descriptor: MethodDescriptor,
     val id: JvmMethodId,
-) : MethodDescriptor by descriptor {
+) : MethodDescriptor by descriptor, VisibilityProvider, AnnotationProvider {
     inline fun MemScope.allocArgs(closure: ArgumentScope.() -> Unit): CPointer<JvmValue>? {
         return interpretCPointer(
             ArgumentScope(
@@ -298,6 +317,29 @@ class JvmMethod(
         }
     }
 
+    @OptIn(ExperimentalNativeApi::class)
+    inline fun callChar(
+        env: JniEnvironment,
+        instance: JvmObject = JvmObject.NULL,
+        args: ArgumentScope.() -> Unit = {}
+    ): Char {
+        return memScoped {
+            // @formatter:off
+            Char.toChars(when (descriptor.callType) {
+                CallType.STATIC -> env.pointed?.CallStaticCharMethodA?.invoke(
+                    env.ptr, enclosingClass.handle, id, allocArgs(args)
+                )
+                CallType.VIRTUAL -> env.pointed?.CallCharMethodA?.invoke(
+                    env.ptr, instance.handle, id, allocArgs(args)
+                )
+                CallType.DIRECT -> env.pointed?.CallNonvirtualCharMethodA?.invoke(
+                    env.ptr, instance.handle, enclosingClass.handle, id, allocArgs(args)
+                )
+            }?.toInt() ?: 0)[0]
+            // @formatter:on
+        }
+    }
+
     inline fun callObject(
         env: JniEnvironment,
         instance: JvmObject = JvmObject.NULL,
@@ -339,9 +381,11 @@ class JvmMethod(
             Float::class -> callFloat(env, instance, closure)
             Double::class -> callDouble(env, instance, closure)
             Boolean::class -> callBoolean(env, instance, closure)
+            Char::class -> callChar(env, instance, closure)
             JvmObject::class -> callObject(env, instance, closure)
             JvmString::class -> callObject(env, instance, closure).cast(env)
             JvmClass::class -> callObject(env, instance, closure).cast(env)
+            JvmArray::class -> JvmArray.fromUnchecked(callObject(env, instance, closure))
             else -> throw IllegalArgumentException("Unsupported return type")
         } as R
     }
@@ -356,7 +400,7 @@ class JvmMethod(
             )
         )
 
-    fun getVisibility(env: JniEnvironment): JvmVisibility = jniScoped(env) {
+    override fun getVisibility(env: JniEnvironment): JvmVisibility = jniScoped(env) {
         JvmClass.find(Type.METHOD).findMethod {
             name = "getModifiers"
             returnType = PrimitiveType.INT
@@ -368,7 +412,7 @@ class JvmMethod(
         }
     }
 
-    fun hasAnnotation(env: JniEnvironment, type: Type): Boolean = jniScoped(env) {
+    override fun hasAnnotation(env: JniEnvironment, type: Type): Boolean = jniScoped(env) {
         JvmClass.find(Type.METHOD).findMethod {
             name = "isAnnotationPresent"
             returnType = PrimitiveType.BOOLEAN
@@ -379,7 +423,7 @@ class JvmMethod(
         }
     }
 
-    fun getAnnotation(env: JniEnvironment, type: Type): JvmObject = jniScoped(env) {
+    override fun getAnnotation(env: JniEnvironment, type: Type): JvmObject = jniScoped(env) {
         JvmClass.find(Type.METHOD).findMethod {
             name = "getAnnotation"
             returnType = type

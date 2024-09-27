@@ -39,6 +39,7 @@ import kotlinx.cinterop.reinterpret
 import kotlinx.cinterop.usePinned
 import platform.posix.memcpy
 import kotlin.concurrent.AtomicNativePtr
+import kotlin.concurrent.AtomicReference
 import kotlin.experimental.ExperimentalNativeApi
 import kotlin.native.internal.NativePtr
 
@@ -49,7 +50,27 @@ object JniPlatform {
         set(value) {
             vmAddress.value = value?.rawPtr ?: NativePtr.NULL
         }
-    var environment: ThreadLocalRef<JniEnvironment?> = ThreadLocalRef()
+    val environment: ThreadLocalRef<JniEnvironment?> = ThreadLocalRef()
+    var loadCallback: AtomicReference<JniScope.() -> Unit> =
+        AtomicReference {}
+    var unloadCallback: AtomicReference<JniScope.() -> Unit> =
+        AtomicReference {}
+
+    inline fun onLoad(crossinline closure: JniScope.() -> Unit) {
+        val previousLoadCallback = loadCallback.value
+        loadCallback.value = {
+            previousLoadCallback()
+            closure()
+        }
+    }
+
+    inline fun onUnload(crossinline closure: JniScope.() -> Unit) {
+        val previousLoadCallback = unloadCallback.value
+        unloadCallback.value = {
+            previousLoadCallback()
+            closure()
+        }
+    }
 
     fun attach(): JniEnvironment? {
         return if (environment.value != null) environment.value
@@ -87,10 +108,17 @@ fun jniOnLoad(vm: JavaVm, reserved: COpaquePointer): JvmInt {
                     JNI_VERSION_1_8
                 )
                 platform.environment.value = address.pointed
+                jniScoped { JniPlatform.loadCallback.value(this) }
             }
             JNI_VERSION_1_8
         } ?: JNI_ERR
     }
+}
+
+@Suppress("UNUSED_PARAMETER", "UNUSED")
+@CName("JNI_OnUnload")
+fun jniOnUnload(vm: JavaVm, reserved: COpaquePointer) {
+    jniScoped { JniPlatform.unloadCallback.value(this) }
 }
 
 fun MemScope.allocCString(value: String): CPointer<ByteVar> {

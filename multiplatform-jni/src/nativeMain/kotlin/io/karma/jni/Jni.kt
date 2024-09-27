@@ -19,9 +19,11 @@
 package io.karma.jni
 
 import jni.JNIEnvVar
+import jni.JNINativeMethod
 import jni.JNI_FALSE
 import jni.JNI_TRUE
 import jni.JavaVMVar
+import jni.jarray
 import jni.jboolean
 import jni.jbyte
 import jni.jclass
@@ -57,9 +59,11 @@ typealias JvmBoolean = jboolean
 typealias JvmClassHandle = jclass
 typealias JvmObjectHandle = jobject
 typealias JvmStringHandle = jstring
+typealias JvmArrayHandle = jarray
 typealias JvmValue = jvalue
 typealias JvmFieldId = jfieldID
 typealias JvmMethodId = jmethodID
+typealias JvmNativeMethod = JNINativeMethod
 
 fun JvmBoolean.toKBoolean(): Boolean = this == JNI_TRUE.convert<JvmBoolean>()
 fun Boolean.toJBoolean(): JvmBoolean =
@@ -71,4 +75,13 @@ enum class JvmVisibility(internal val jvmValue: UShort) {
     PRIVATE  (0x2U),
     PROTECTED(0x4U)
     // @formatter:on
+}
+
+interface VisibilityProvider {
+    fun getVisibility(env: JniEnvironment): JvmVisibility
+}
+
+interface AnnotationProvider {
+    fun hasAnnotation(env: JniEnvironment, type: Type): Boolean
+    fun getAnnotation(env: JniEnvironment, type: Type): JvmObject
 }
