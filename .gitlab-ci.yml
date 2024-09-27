@@ -13,11 +13,30 @@ cache:
     - .gradle/caches
     - .kotlin
 
-build:
+build-linux:
   stage: build
   script:
-    - ./gradlew -DpublishDocs.root=/var/www/docs/multiplatform-jni clean publish publishDocs --no-daemon
+    - ./gradlew 
+      -DpublishDocs.root=/var/www/docs/multiplatform-jni 
+      clean 
+      publish 
+      publishDocs 
+      --no-daemon 
+      --stacktrace
   only:
     - master
   tags:
     - linux
+
+build-macos:
+  stage: build
+  script:
+    - ./gradlew 
+      clean
+      publish{MacosX64,MacosArm64}PublicationToGitlabRepository
+      --no-daemon
+      --stacktrace
+  only:
+    - master
+  tags:
+    - macos
