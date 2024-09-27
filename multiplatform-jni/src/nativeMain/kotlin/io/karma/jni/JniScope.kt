@@ -21,6 +21,7 @@ package io.karma.jni
 import io.karma.jni.JvmObject.Companion.cast
 import jni.jstring
 import kotlinx.cinterop.COpaquePointer
+import kotlinx.cinterop.CVariable
 import kotlinx.cinterop.ExperimentalForeignApi
 
 value class JniScope(val env: JniEnvironment) {
@@ -72,6 +73,9 @@ value class JniScope(val env: JniEnvironment) {
         get() = getFields(env)
     val JvmClass.methods: List<JvmMethod>
         get() = getMethods(env)
+
+    fun JvmClass.unreflectField(field: JvmObject): JvmField = unreflectField(env, field)
+    fun JvmClass.unreflectMethod(method: JvmObject): JvmMethod = unreflectMethod(env, method)
 
     fun JvmField.getByte(instance: JvmObject = JvmObject.NULL): Byte = getByte(env, instance)
     fun JvmField.getShort(instance: JvmObject = JvmObject.NULL): Short = getShort(env, instance)
@@ -167,12 +171,34 @@ value class JniScope(val env: JniEnvironment) {
 
     inline fun <reified T : JvmObject> JvmObject.cast(): T = cast<T>(env)
 
-    fun JvmString.Companion.of(value: String): JvmString = of(env, value)
+    fun JvmString.Companion.create(value: String): JvmString = create(env, value)
 
     val JvmString.value: String?
         get() = get(env)
     val JvmString.length: Int
         get() = getLength(env)
+
+    @UnsafeJniApi
+    fun JvmArray.copyPrimitiveDataFrom(from: COpaquePointer, elementSize: Int, range: IntRange) =
+        copyPrimitiveDataFrom(env, from, elementSize, range)
+
+    @UnsafeJniApi
+    fun JvmArray.copyPrimitiveDataTo(to: COpaquePointer, elementSize: Int, range: IntRange) =
+        copyPrimitiveDataTo(env, to, elementSize, range)
+
+    @UnsafeJniApi
+    inline fun <reified T : CVariable> JvmArray.copyPrimitiveDataFrom(
+        from: COpaquePointer,
+        range: IntRange
+    ) =
+        copyPrimitiveDataFrom<T>(env, from, range)
+
+    @UnsafeJniApi
+    inline fun <reified T : CVariable> JvmArray.copyPrimitiveDataTo(
+        to: COpaquePointer,
+        range: IntRange
+    ) =
+        copyPrimitiveDataTo<T>(env, to, range)
 
     fun JvmArray.setByte(index: Int, value: Byte) = setByte(env, index, value)
     fun JvmArray.setShort(index: Int, value: Short) = setShort(env, index, value)
@@ -198,12 +224,23 @@ value class JniScope(val env: JniEnvironment) {
 
     inline operator fun <reified R> JvmArray.get(index: Int): R = get<R>(env, index)
 
+    fun JvmArray.toByteArray(): ByteArray = toByteArray(env)
+    fun JvmArray.toShortArray(): ShortArray = toShortArray(env)
+    fun JvmArray.toIntArray(): IntArray = toIntArray(env)
+    fun JvmArray.toLongArray(): LongArray = toLongArray(env)
+    fun JvmArray.toFloatArray(): FloatArray = toFloatArray(env)
+    fun JvmArray.toDoubleArray(): DoubleArray = toDoubleArray(env)
+    fun JvmArray.toObjectArray(): Array<JvmObject> = toObjectArray(env)
+
     val JvmArray.componentTypeClass: JvmClass
         get() = getComponentTypeClass(env)
     val JvmArray.length: Int
         get() = getLength(env)
+    val JvmArray.indices: IntRange
+        get() = 0..<getLength(env)
 }
 
+@OptIn(UnsafeJniApi::class)
 inline fun <reified R> jniScoped(scope: JniScope.() -> R): R {
     val result =
         scope(JniScope(requireNotNull(JniPlatform.attach()) { "Could not access JNI environment" }))

@@ -66,9 +66,10 @@ value class JvmString private constructor(
             else JvmString(handle)
         }
 
+        @UnsafeJniApi
         fun fromUnchecked(obj: JvmObject): JvmString = fromHandle(obj.handle)
 
-        fun of(env: JniEnvironment, value: String): JvmString {
+        fun create(env: JniEnvironment, value: String): JvmString {
             return memScoped {
                 fromHandle(env.pointed?.NewStringUTF?.invoke(env.ptr, allocCString(value)))
             }

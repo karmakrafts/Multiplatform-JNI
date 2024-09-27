@@ -85,3 +85,11 @@ interface AnnotationProvider {
     fun hasAnnotation(env: JniEnvironment, type: Type): Boolean
     fun getAnnotation(env: JniEnvironment, type: Type): JvmObject
 }
+
+@Retention(AnnotationRetention.BINARY)
+@RequiresOptIn(message = "The API you're trying to use can result in undefined behaviour if used incorrectly")
+annotation class UnsafeJniApi
+
+@Retention(AnnotationRetention.BINARY)
+@RequiresOptIn(message = "The API you're trying to use is internal to multiplatform-jni and may change at any time")
+annotation class InternalJniApi

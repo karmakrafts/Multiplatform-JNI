@@ -47,15 +47,20 @@ object JniPlatform {
     private val vmAddress: AtomicNativePtr = AtomicNativePtr(NativePtr.NULL)
     var vm: JavaVm?
         get() = interpretCPointer<JavaVm>(vmAddress.value)?.pointed
-        set(value) {
+        internal set(value) {
             vmAddress.value = value?.rawPtr ?: NativePtr.NULL
         }
     val environment: ThreadLocalRef<JniEnvironment?> = ThreadLocalRef()
+
+    @InternalJniApi
     var loadCallback: AtomicReference<JniScope.() -> Unit> =
         AtomicReference {}
+
+    @InternalJniApi
     var unloadCallback: AtomicReference<JniScope.() -> Unit> =
         AtomicReference {}
 
+    @OptIn(InternalJniApi::class)
     inline fun onLoad(crossinline closure: JniScope.() -> Unit) {
         val previousLoadCallback = loadCallback.value
         loadCallback.value = {
@@ -64,6 +69,7 @@ object JniPlatform {
         }
     }
 
+    @OptIn(InternalJniApi::class)
     inline fun onUnload(crossinline closure: JniScope.() -> Unit) {
         val previousLoadCallback = unloadCallback.value
         unloadCallback.value = {
@@ -72,6 +78,7 @@ object JniPlatform {
         }
     }
 
+    @UnsafeJniApi
     fun attach(): JniEnvironment? {
         return if (environment.value != null) environment.value
         else memScoped {
@@ -87,6 +94,7 @@ object JniPlatform {
         }
     }
 
+    @UnsafeJniApi
     fun detach() {
         if (environment.value == null) return
         vm?.pointed?.DetachCurrentThread?.invoke(vm?.ptr)
@@ -94,6 +102,7 @@ object JniPlatform {
     }
 }
 
+@OptIn(InternalJniApi::class)
 @Suppress("UNUSED_PARAMETER", "UNUSED")
 @CName("JNI_OnLoad")
 fun jniOnLoad(vm: JavaVm, reserved: COpaquePointer): JvmInt {
@@ -115,6 +124,7 @@ fun jniOnLoad(vm: JavaVm, reserved: COpaquePointer): JvmInt {
     }
 }
 
+@OptIn(InternalJniApi::class)
 @Suppress("UNUSED_PARAMETER", "UNUSED")
 @CName("JNI_OnUnload")
 fun jniOnUnload(vm: JavaVm, reserved: COpaquePointer) {

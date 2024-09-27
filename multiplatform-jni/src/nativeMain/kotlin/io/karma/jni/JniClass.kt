@@ -30,8 +30,8 @@ import kotlinx.cinterop.ptr
 class JvmClass internal constructor(
     override val handle: JvmClassHandle?
 ) : JvmObject, VisibilityProvider, AnnotationProvider {
-    internal val fields: ConcurrentMutableMap<FieldDescriptor, JvmField> = ConcurrentMutableMap()
-    internal val methods: ConcurrentMutableMap<MethodDescriptor, JvmMethod> = ConcurrentMutableMap()
+    private val fields: ConcurrentMutableMap<FieldDescriptor, JvmField> = ConcurrentMutableMap()
+    private val methods: ConcurrentMutableMap<MethodDescriptor, JvmMethod> = ConcurrentMutableMap()
 
     companion object {
         val NULL: JvmClass = JvmClass(null)
@@ -42,6 +42,7 @@ class JvmClass internal constructor(
             else cache.getOrPut(handle) { JvmClass(handle) }
         }
 
+        @UnsafeJniApi
         fun fromUnchecked(obj: JvmObject): JvmClass = fromHandle(obj.handle)
 
         fun findOrNull(env: JniEnvironment, type: Type): JvmClass? {
@@ -56,6 +57,75 @@ class JvmClass internal constructor(
 
         fun find(env: JniEnvironment, type: Type): JvmClass =
             requireNotNull(findOrNull(env, type)) { "Could not find class" }
+    }
+
+    fun unreflectField(env: JniEnvironment, field: JvmObject): JvmField = jniScoped(env) {
+        val descriptor = FieldDescriptor.create {
+            val fieldClass = JvmClass.find(Type.FIELD)
+
+            name = requireNotNull(fieldClass.findMethod {
+                name = "getName"
+                returnType = Type.STRING
+                callType = CallType.DIRECT
+            }.callObject(field).cast<JvmString>().value) { "Field name must not be null" }
+
+            type = fieldClass.findMethod {
+                name = "getType"
+                returnType = Type.CLASS
+                callType = CallType.DIRECT
+            }.callObject(field).cast<JvmClass>().type
+
+            isStatic = fieldClass.findMethod {
+                name = "getModifiers"
+                returnType = PrimitiveType.INT
+                callType = CallType.DIRECT
+            }.callInt(field) and 0x8 == 0x8 // Test static bit
+        }
+        fields.getOrPut(descriptor) {
+            JvmField(this@JvmClass, descriptor,
+                requireNotNull(env.pointed?.FromReflectedField?.invoke(env.ptr, field.handle))
+                { "Field ID must not be null" })
+        }
+    }
+
+    fun unreflectMethod(env: JniEnvironment, method: JvmObject): JvmMethod = jniScoped(env) {
+        val descriptor = MethodDescriptor.create {
+            val methodClass = JvmClass.find(Type.CLASS)
+
+            name = requireNotNull(methodClass.findMethod {
+                name = "getName"
+                returnType = Type.STRING
+                callType = CallType.DIRECT
+            }.callObject(method).cast<JvmString>().value) { "Field name must not be null" }
+
+            returnType = methodClass.findMethod {
+                name = "getReturnType"
+                returnType = Type.CLASS
+                callType = CallType.DIRECT
+            }.callObject(method).cast<JvmClass>().type
+
+            parameterTypes += methodClass.findMethod {
+                name = "getParameterTypes"
+                returnType = Type.CLASS.array()
+                callType = CallType.DIRECT
+            }.callObject(method)
+                .cast<JvmArray>()
+                .toObjectArray()
+                .map { it.cast<JvmClass>().type }
+
+            callType = methodClass.findMethod {
+                name = "getModifiers"
+                returnType = PrimitiveType.INT
+                callType = CallType.DIRECT
+            }.callInt(method).let {
+                if (it and 0x8 == 0x8) CallType.STATIC else CallType.VIRTUAL
+            }
+        }
+        methods.getOrPut(descriptor) {
+            JvmMethod(this@JvmClass, descriptor,
+                requireNotNull(env.pointed?.FromReflectedMethod?.invoke(env.ptr, method.handle))
+                { "Method ID must not be null" })
+        }
     }
 
     fun findFieldOrNull(env: JniEnvironment, descriptor: FieldDescriptor): JvmField? {
@@ -173,11 +243,25 @@ class JvmClass internal constructor(
     }
 
     fun getFields(env: JniEnvironment): List<JvmField> = jniScoped(env) {
-        return emptyList() // TODO
+        findMethod {
+            name = "getDeclaredFields"
+            returnType = Type.FIELD.array()
+            callType = CallType.DIRECT
+        }.callObject(this@JvmClass)
+            .cast<JvmArray>()
+            .toObjectArray()
+            .map { unreflectField(it) }
     }
 
     fun getMethods(env: JniEnvironment): List<JvmMethod> = jniScoped(env) {
-        return emptyList() // TODO
+        findMethod {
+            name = "getDeclaredMethods"
+            returnType = Type.METHOD.array()
+            callType = CallType.DIRECT
+        }.callObject(this@JvmClass)
+            .cast<JvmArray>()
+            .toObjectArray()
+            .map { unreflectMethod(it) }
     }
 
     fun getComponentTypeClass(env: JniEnvironment): JvmClass = jniScoped(env) {

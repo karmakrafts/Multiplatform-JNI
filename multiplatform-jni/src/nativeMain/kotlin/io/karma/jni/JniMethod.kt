@@ -367,6 +367,7 @@ class JvmMethod(
         args: ArgumentScope.() -> Unit = {}
     ): R = callObject(env, instance, args).cast(env)
 
+    @OptIn(UnsafeJniApi::class)
     @Suppress("IMPLICIT_CAST_TO_ANY")
     inline fun <reified R> call(
         env: JniEnvironment,

@@ -182,6 +182,7 @@ class JvmField(
         return getObject(env, instance).cast(env)
     }
 
+    @OptIn(UnsafeJniApi::class)
     @Suppress("IMPLICIT_CAST_TO_ANY")
     inline fun <reified R> get(env: JniEnvironment, instance: JvmObject = JvmObject.NULL): R {
         return when (R::class) {

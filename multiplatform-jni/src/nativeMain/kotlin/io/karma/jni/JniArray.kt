@@ -26,14 +26,24 @@ import jni.jfloatVar
 import jni.jintVar
 import jni.jlongVar
 import jni.jshortVar
+import kotlinx.cinterop.COpaque
+import kotlinx.cinterop.COpaquePointer
+import kotlinx.cinterop.CVariable
 import kotlinx.cinterop.ExperimentalForeignApi
+import kotlinx.cinterop.addressOf
+import kotlinx.cinterop.convert
 import kotlinx.cinterop.get
+import kotlinx.cinterop.interpretCPointer
 import kotlinx.cinterop.invoke
 import kotlinx.cinterop.pointed
 import kotlinx.cinterop.ptr
 import kotlinx.cinterop.reinterpret
 import kotlinx.cinterop.set
+import kotlinx.cinterop.sizeOf
+import kotlinx.cinterop.usePinned
+import platform.posix.memcpy
 import kotlin.experimental.ExperimentalNativeApi
+import kotlin.native.internal.NativePtr
 
 value class JvmArray private constructor(
     override val handle: JvmArrayHandle?
@@ -46,6 +56,7 @@ value class JvmArray private constructor(
             else JvmArray(handle)
         }
 
+        @UnsafeJniApi
         fun fromUnchecked(obj: JvmObject): JvmArray = fromHandle(obj.handle)
     }
 
@@ -55,6 +66,54 @@ value class JvmArray private constructor(
     fun getComponentTypeClass(env: JniEnvironment): JvmClass = jniScoped(env) {
         typeClass.componentTypeClass
     }
+
+    @UnsafeJniApi
+    fun copyPrimitiveDataFrom(
+        env: JniEnvironment,
+        from: COpaquePointer,
+        elementSize: Int,
+        range: IntRange
+    ) {
+        val to = env.pointed?.GetPrimitiveArrayCritical?.invoke(env.ptr, handle, null)
+        memcpy(
+            interpretCPointer<COpaque>(
+                to?.rawValue?.plus(range.first.toLong()) ?: NativePtr.NULL
+            ), from, (elementSize * (range.last - range.first)).convert()
+        )
+        env.pointed?.ReleasePrimitiveArrayCritical?.invoke(env.ptr, handle, to, 0)
+    }
+
+    @UnsafeJniApi
+    inline fun <reified T : CVariable> copyPrimitiveDataFrom(
+        env: JniEnvironment,
+        from: COpaquePointer,
+        range: IntRange
+    ) = copyPrimitiveDataFrom(env, from, sizeOf<T>().toInt(), range)
+
+    @UnsafeJniApi
+    fun copyPrimitiveDataTo(
+        env: JniEnvironment,
+        to: COpaquePointer,
+        elementSize: Int,
+        range: IntRange
+    ) {
+        val from = env.pointed?.GetPrimitiveArrayCritical?.invoke(env.ptr, handle, null)
+        memcpy(
+            to,
+            interpretCPointer<COpaque>(
+                from?.rawValue?.plus(range.first.toLong()) ?: NativePtr.NULL
+            ),
+            (elementSize * (range.last - range.first)).convert()
+        )
+        env.pointed?.ReleasePrimitiveArrayCritical?.invoke(env.ptr, handle, from, 0)
+    }
+
+    @UnsafeJniApi
+    inline fun <reified T : CVariable> copyPrimitiveDataTo(
+        env: JniEnvironment,
+        to: COpaquePointer,
+        range: IntRange
+    ) = copyPrimitiveDataTo(env, to, sizeOf<T>().toInt(), range)
 
     // Setters
 
@@ -216,5 +275,65 @@ value class JvmArray private constructor(
             JvmArray::class -> getObject(env, index).cast<JvmArray>()
             else -> throw IllegalArgumentException("Unsupported array component type")
         } as R
+    }
+
+    // Conversions
+
+    @OptIn(UnsafeJniApi::class)
+    fun toByteArray(env: JniEnvironment): ByteArray = jniScoped(env) {
+        ByteArray(length).apply {
+            usePinned { pinnedArray ->
+                copyPrimitiveDataTo<jbyteVar>(pinnedArray.addressOf(0), indices)
+            }
+        }
+    }
+
+    @OptIn(UnsafeJniApi::class)
+    fun toShortArray(env: JniEnvironment): ShortArray = jniScoped(env) {
+        ShortArray(length).apply {
+            usePinned { pinnedArray ->
+                copyPrimitiveDataTo<jshortVar>(pinnedArray.addressOf(0), indices)
+            }
+        }
+    }
+
+    @OptIn(UnsafeJniApi::class)
+    fun toIntArray(env: JniEnvironment): IntArray = jniScoped(env) {
+        IntArray(length).apply {
+            usePinned { pinnedArray ->
+                copyPrimitiveDataTo<jintVar>(pinnedArray.addressOf(0), indices)
+            }
+        }
+    }
+
+    @OptIn(UnsafeJniApi::class)
+    fun toLongArray(env: JniEnvironment): LongArray = jniScoped(env) {
+        LongArray(length).apply {
+            usePinned { pinnedArray ->
+                copyPrimitiveDataTo<jlongVar>(pinnedArray.addressOf(0), indices)
+            }
+        }
+    }
+
+    @OptIn(UnsafeJniApi::class)
+    fun toFloatArray(env: JniEnvironment): FloatArray = jniScoped(env) {
+        FloatArray(length).apply {
+            usePinned { pinnedArray ->
+                copyPrimitiveDataTo<jfloatVar>(pinnedArray.addressOf(0), indices)
+            }
+        }
+    }
+
+    @OptIn(UnsafeJniApi::class)
+    fun toDoubleArray(env: JniEnvironment): DoubleArray = jniScoped(env) {
+        DoubleArray(length).apply {
+            usePinned { pinnedArray ->
+                copyPrimitiveDataTo<jdoubleVar>(pinnedArray.addressOf(0), indices)
+            }
+        }
+    }
+
+    fun toObjectArray(env: JniEnvironment): Array<JvmObject> = jniScoped(env) {
+        Array(length) { getObject(it) }
     }
 }

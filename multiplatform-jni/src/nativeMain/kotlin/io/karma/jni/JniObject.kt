@@ -35,6 +35,7 @@ interface JvmObject {
             else SimpleJvmObject(handle)
         }
 
+        @OptIn(UnsafeJniApi::class)
         inline fun <reified T : JvmObject> JvmObject.cast(env: JniEnvironment): T {
             return when (T::class) {
                 JvmObject::class, JvmObjectRef::class -> this
