@@ -5,7 +5,6 @@ stages:
 
 before_script:
   - export GRADLE_USER_HOME=`pwd`/.gradle
-  - export JAVA_HOME=/home/sdks/zulu-17
 
 cache:
   paths:
@@ -15,6 +14,8 @@ cache:
 
 build-linux:
   stage: build
+  before_script:
+    - export JAVA_HOME=/home/sdks/zulu-17
   script:
     - ./gradlew 
       -DpublishDocs.root=/var/www/docs/multiplatform-jni 
@@ -30,6 +31,8 @@ build-linux:
 
 build-macos:
   stage: build
+  before_script:
+    - export JAVA_HOME=/Library/Java/JavaVirtualMachines/zulu-17.jdk/Contents/Home
   script:
     - ./gradlew 
       clean
