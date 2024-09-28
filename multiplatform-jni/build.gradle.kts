@@ -32,12 +32,13 @@ java {
 }
 
 val jniFiles = projectDir.toPath() / "jni"
+val dlfcnFiles = projectDir.toPath() / "dlfcn"
 
 kotlin {
     jvm()
     mingwX64 {
         val jniHome = jniFiles / "windows-x64"
-        val dlfcnHome = projectDir.toPath() / "mingw-dlfcn"
+        val dlfcnHome = dlfcnFiles / "windows-x64"
         compilations["main"].cinterops {
             val dlfcn by creating {
                 compilerOpts("-I${dlfcnHome / "include"}")
@@ -68,11 +69,12 @@ kotlin {
             else -> throw IllegalStateException("Unsupported target platform")
         }
         val jniHome = jniFiles / platformPair
+        val dlfcnHome = dlfcnFiles / platformPair
         target.apply {
             compilations["main"].cinterops {
                 val dlfcn by creating {
-                    compilerOpts("-I/usr/include")
-                    headers("/usr/include/dlfcn.h")
+                    compilerOpts("-I${dlfcnHome / "include"}")
+                    headers("${dlfcnHome / "include" / "dlfcn.h"}")
                 }
                 val jni by creating {
                     compilerOpts("-I${jniHome / "include"}", "-I${jniHome / "include" / "linux"}")
@@ -93,11 +95,12 @@ kotlin {
             else -> throw IllegalStateException("Unsupported target platform")
         }
         val jniHome = jniFiles / platformPair
+        val dlfcnHome = dlfcnFiles / platformPair
         target.apply {
             compilations["main"].cinterops {
                 val dlfcn by creating {
-                    compilerOpts("-I/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk/usr/include")
-                    headers("/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk/usr/include/dlfcn.h")
+                    compilerOpts("-I${dlfcnHome / "include"}")
+                    headers("${dlfcnHome / "include" / "dlfcn.h"}")
                 }
                 val jni by creating {
                     compilerOpts("-I${jniHome / "include"}", "-I${jniHome / "include" / "darwin"}")
@@ -107,6 +110,12 @@ kotlin {
             binaries {
                 framework {
                     baseName = "MultiplatformJNI"
+                }
+                sharedLib {
+                    linkerOpts(
+                        "-L/Library/Developer/CommandLineTools/SDKs/MacOSX.sdk/usr/lib",
+                        "-ldl"
+                    )
                 }
             }
         }
