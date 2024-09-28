@@ -146,10 +146,11 @@ interface JvmArray : JvmObject {
     )
 }
 
-value class JvmGenericArray private constructor(
-    override val handle: JvmArrayHandle?
+value class JvmGenericArray @UnsafeJniApi private constructor(
+    @property:UnsafeJniApi override val handle: JvmArrayHandle?
 ) : JvmArray {
     companion object {
+        @property:OptIn(UnsafeJniApi::class)
         val NULL: JvmGenericArray = JvmGenericArray(null)
 
         @UnsafeJniApi
@@ -162,6 +163,7 @@ value class JvmGenericArray private constructor(
         fun fromUnchecked(obj: JvmObject): JvmGenericArray = fromHandle(obj.handle)
     }
 
+    @OptIn(UnsafeJniApi::class)
     override fun getLength(env: JniEnvironment): Int =
         env.pointed?.GetArrayLength?.invoke(env.ptr, handle) ?: 0
 
@@ -253,6 +255,7 @@ value class JvmGenericArray private constructor(
         handle?.usePinned<jcharVar, Unit> { it[index] = value.code.toUShort() }
     }
 
+    @OptIn(UnsafeJniApi::class)
     fun setObject(env: JniEnvironment, index: Int, value: JvmObject) {
         env.pointed?.SetObjectArrayElement?.invoke(env.ptr, handle, index, value.handle)
     }

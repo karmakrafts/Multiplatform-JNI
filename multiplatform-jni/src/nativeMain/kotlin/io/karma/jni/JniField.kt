@@ -70,10 +70,11 @@ internal data class SimpleFieldDescriptor(
 class JvmField(
     val enclosingClass: JvmClass,
     val descriptor: FieldDescriptor,
-    val id: JvmFieldId,
+    @property:UnsafeJniApi val id: JvmFieldId,
 ) : FieldDescriptor by descriptor, VisibilityProvider, AnnotationProvider {
     // Getters
 
+    @OptIn(UnsafeJniApi::class)
     fun getByte(env: JniEnvironment, instance: JvmObject = JvmObject.NULL): Byte {
         if (descriptor.isStatic) {
             return env.pointed?.GetStaticByteField?.invoke(env.ptr, enclosingClass.handle, id)
@@ -83,6 +84,7 @@ class JvmField(
         return env.pointed?.GetByteField?.invoke(env.ptr, instance.handle, id) ?: 0
     }
 
+    @OptIn(UnsafeJniApi::class)
     fun getShort(env: JniEnvironment, instance: JvmObject = JvmObject.NULL): Short {
         if (descriptor.isStatic) {
             return env.pointed?.GetStaticShortField?.invoke(env.ptr, enclosingClass.handle, id)
@@ -92,6 +94,7 @@ class JvmField(
         return env.pointed?.GetShortField?.invoke(env.ptr, instance.handle, id) ?: 0
     }
 
+    @OptIn(UnsafeJniApi::class)
     fun getInt(env: JniEnvironment, instance: JvmObject = JvmObject.NULL): Int {
         if (descriptor.isStatic) {
             return env.pointed?.GetStaticIntField?.invoke(env.ptr, enclosingClass.handle, id)
@@ -101,6 +104,7 @@ class JvmField(
         return env.pointed?.GetIntField?.invoke(env.ptr, instance.handle, id) ?: 0
     }
 
+    @OptIn(UnsafeJniApi::class)
     fun getLong(env: JniEnvironment, instance: JvmObject = JvmObject.NULL): Long {
         if (descriptor.isStatic) {
             return env.pointed?.GetStaticLongField?.invoke(env.ptr, enclosingClass.handle, id)
@@ -110,6 +114,7 @@ class JvmField(
         return env.pointed?.GetLongField?.invoke(env.ptr, instance.handle, id) ?: 0
     }
 
+    @OptIn(UnsafeJniApi::class)
     fun getFloat(env: JniEnvironment, instance: JvmObject = JvmObject.NULL): Float {
         if (descriptor.isStatic) {
             return env.pointed?.GetStaticFloatField?.invoke(env.ptr, enclosingClass.handle, id)
@@ -119,6 +124,7 @@ class JvmField(
         return env.pointed?.GetFloatField?.invoke(env.ptr, instance.handle, id) ?: 0F
     }
 
+    @OptIn(UnsafeJniApi::class)
     fun getDouble(env: JniEnvironment, instance: JvmObject = JvmObject.NULL): Double {
         if (descriptor.isStatic) {
             return env.pointed?.GetStaticDoubleField?.invoke(env.ptr, enclosingClass.handle, id)
@@ -128,6 +134,7 @@ class JvmField(
         return env.pointed?.GetDoubleField?.invoke(env.ptr, instance.handle, id) ?: 0.0
     }
 
+    @OptIn(UnsafeJniApi::class)
     fun getBoolean(env: JniEnvironment, instance: JvmObject = JvmObject.NULL): Boolean {
         if (descriptor.isStatic) {
             return env.pointed?.GetStaticBooleanField?.invoke(
@@ -141,7 +148,7 @@ class JvmField(
             ?: false
     }
 
-    @OptIn(ExperimentalNativeApi::class)
+    @OptIn(ExperimentalNativeApi::class, UnsafeJniApi::class)
     fun getChar(env: JniEnvironment, instance: JvmObject = JvmObject.NULL): Char {
         if (descriptor.isStatic) {
             return Char.toChars(
@@ -221,6 +228,7 @@ class JvmField(
 
     // Setters
 
+    @OptIn(UnsafeJniApi::class)
     fun setByte(env: JniEnvironment, value: Byte, instance: JvmObject = JvmObject.NULL) {
         if (descriptor.isStatic) {
             env.pointed?.SetStaticByteField?.invoke(env.ptr, enclosingClass.handle, id, value)
@@ -230,6 +238,7 @@ class JvmField(
         env.pointed?.SetByteField?.invoke(env.ptr, instance.handle, id, value.convert())
     }
 
+    @OptIn(UnsafeJniApi::class)
     fun setShort(env: JniEnvironment, value: Short, instance: JvmObject = JvmObject.NULL) {
         if (descriptor.isStatic) {
             env.pointed?.SetStaticShortField?.invoke(env.ptr, enclosingClass.handle, id, value)
@@ -239,6 +248,7 @@ class JvmField(
         env.pointed?.SetShortField?.invoke(env.ptr, instance.handle, id, value.convert())
     }
 
+    @OptIn(UnsafeJniApi::class)
     fun setInt(env: JniEnvironment, value: Int, instance: JvmObject = JvmObject.NULL) {
         if (descriptor.isStatic) {
             env.pointed?.SetStaticIntField?.invoke(env.ptr, enclosingClass.handle, id, value)
@@ -248,6 +258,7 @@ class JvmField(
         env.pointed?.SetIntField?.invoke(env.ptr, instance.handle, id, value.convert())
     }
 
+    @OptIn(UnsafeJniApi::class)
     fun setLong(env: JniEnvironment, value: Long, instance: JvmObject = JvmObject.NULL) {
         if (descriptor.isStatic) {
             env.pointed?.SetStaticLongField?.invoke(env.ptr, enclosingClass.handle, id, value)
@@ -257,6 +268,7 @@ class JvmField(
         env.pointed?.SetLongField?.invoke(env.ptr, instance.handle, id, value.convert())
     }
 
+    @OptIn(UnsafeJniApi::class)
     fun setFloat(env: JniEnvironment, value: Float, instance: JvmObject = JvmObject.NULL) {
         if (descriptor.isStatic) {
             env.pointed?.SetStaticFloatField?.invoke(env.ptr, enclosingClass.handle, id, value)
@@ -266,6 +278,7 @@ class JvmField(
         env.pointed?.SetFloatField?.invoke(env.ptr, instance.handle, id, value)
     }
 
+    @OptIn(UnsafeJniApi::class)
     fun setDouble(env: JniEnvironment, value: Double, instance: JvmObject = JvmObject.NULL) {
         if (descriptor.isStatic) {
             env.pointed?.SetStaticDoubleField?.invoke(env.ptr, enclosingClass.handle, id, value)
@@ -275,6 +288,7 @@ class JvmField(
         env.pointed?.SetDoubleField?.invoke(env.ptr, instance.handle, id, value)
     }
 
+    @OptIn(UnsafeJniApi::class)
     fun setBoolean(env: JniEnvironment, value: Boolean, instance: JvmObject = JvmObject.NULL) {
         if (descriptor.isStatic) {
             env.pointed?.SetStaticBooleanField?.invoke(
@@ -289,6 +303,7 @@ class JvmField(
         env.pointed?.SetBooleanField?.invoke(env.ptr, instance.handle, id, value.toJBoolean())
     }
 
+    @OptIn(UnsafeJniApi::class)
     fun setChar(env: JniEnvironment, value: Char, instance: JvmObject = JvmObject.NULL) {
         if (descriptor.isStatic) {
             env.pointed?.SetStaticCharField?.invoke(
@@ -303,6 +318,7 @@ class JvmField(
         env.pointed?.SetCharField?.invoke(env.ptr, instance.handle, id, value.code.toUShort())
     }
 
+    @OptIn(UnsafeJniApi::class)
     fun setObject(env: JniEnvironment, value: JvmObject, instance: JvmObject = JvmObject.NULL) {
         if (descriptor.isStatic) {
             env.pointed?.SetStaticObjectField?.invoke(

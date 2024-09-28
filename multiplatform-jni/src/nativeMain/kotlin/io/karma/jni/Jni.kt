@@ -54,7 +54,7 @@ const val JNI_ERR: JvmInt = jni.JNI_ERR
 const val JNI_TRUE: JvmInt = jni.JNI_TRUE
 const val JNI_FALSE: JvmInt = jni.JNI_FALSE
 
-typealias JavaVm = JavaVMVar
+typealias VmHandle = JavaVMVar
 typealias JniEnvironment = JNIEnvVar
 
 typealias JvmByte = jbyte

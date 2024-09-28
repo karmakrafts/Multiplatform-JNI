@@ -107,47 +107,54 @@ class MethodDescriptorBuilder internal constructor() {
 }
 
 class ArgumentScope(
-    val address: NativePointed,
+    @property:InternalJniApi val address: NativePointed,
     private val descriptor: MethodDescriptor,
 ) {
     private var index: Int = 0
 
+    @OptIn(InternalJniApi::class)
     fun put(value: Byte) {
         require(descriptor.parameterTypes[index] == PrimitiveType.BYTE) { "Parameter type mismatch" }
         interpretCPointer<JvmValue>(address.rawPtr + index * sizeOf<JvmValue>())?.pointed?.b = value
         index++
     }
 
+    @OptIn(InternalJniApi::class)
     fun put(value: Short) {
         require(descriptor.parameterTypes[index] == PrimitiveType.SHORT) { "Parameter type mismatch" }
         interpretCPointer<JvmValue>(address.rawPtr + index * sizeOf<JvmValue>())?.pointed?.s = value
         index++
     }
 
+    @OptIn(InternalJniApi::class)
     fun put(value: Int) {
         require(descriptor.parameterTypes[index] == PrimitiveType.INT) { "Parameter type mismatch" }
         interpretCPointer<JvmValue>(address.rawPtr + index * sizeOf<JvmValue>())?.pointed?.i = value
         index++
     }
 
+    @OptIn(InternalJniApi::class)
     fun put(value: Long) {
         require(descriptor.parameterTypes[index] == PrimitiveType.LONG) { "Parameter type mismatch" }
         interpretCPointer<JvmValue>(address.rawPtr + index * sizeOf<JvmValue>())?.pointed?.j = value
         index++
     }
 
+    @OptIn(InternalJniApi::class)
     fun put(value: Float) {
         require(descriptor.parameterTypes[index] == PrimitiveType.FLOAT) { "Parameter type mismatch" }
         interpretCPointer<JvmValue>(address.rawPtr + index * sizeOf<JvmValue>())?.pointed?.f = value
         index++
     }
 
+    @OptIn(InternalJniApi::class)
     fun put(value: Double) {
         require(descriptor.parameterTypes[index] == PrimitiveType.DOUBLE) { "Parameter type mismatch" }
         interpretCPointer<JvmValue>(address.rawPtr + index * sizeOf<JvmValue>())?.pointed?.d = value
         index++
     }
 
+    @OptIn(InternalJniApi::class)
     fun put(value: Boolean) {
         require(descriptor.parameterTypes[index] == PrimitiveType.BOOLEAN) { "Parameter type mismatch" }
         interpretCPointer<JvmValue>(address.rawPtr + index * sizeOf<JvmValue>())?.pointed?.z =
@@ -155,6 +162,7 @@ class ArgumentScope(
         index++
     }
 
+    @OptIn(InternalJniApi::class, UnsafeJniApi::class)
     fun put(value: JvmObject) {
         require(descriptor.parameterTypes[index].typeClass == TypeClass.PRIMITIVE) { "Parameter type mismatch" }
         interpretCPointer<JvmValue>(address.rawPtr + index * sizeOf<JvmValue>())?.pointed?.l =
@@ -168,6 +176,7 @@ class JvmMethod(
     val descriptor: MethodDescriptor,
     val id: JvmMethodId,
 ) : MethodDescriptor by descriptor, VisibilityProvider, AnnotationProvider {
+    @InternalJniApi
     inline fun MemScope.allocArgs(closure: ArgumentScope.() -> Unit): CPointer<JvmValue>? {
         return interpretCPointer(
             ArgumentScope(
@@ -177,6 +186,7 @@ class JvmMethod(
         )
     }
 
+    @OptIn(UnsafeJniApi::class, InternalJniApi::class)
     inline fun callByte(
         env: JniEnvironment,
         instance: JvmObject = JvmObject.NULL,
@@ -197,6 +207,7 @@ class JvmMethod(
         }
     }
 
+    @OptIn(UnsafeJniApi::class, InternalJniApi::class)
     inline fun callShort(
         env: JniEnvironment,
         instance: JvmObject = JvmObject.NULL,
@@ -217,6 +228,7 @@ class JvmMethod(
         }
     }
 
+    @OptIn(InternalJniApi::class, UnsafeJniApi::class)
     inline fun callInt(
         env: JniEnvironment,
         instance: JvmObject = JvmObject.NULL,
@@ -237,6 +249,7 @@ class JvmMethod(
         }
     }
 
+    @OptIn(UnsafeJniApi::class, InternalJniApi::class)
     inline fun callLong(
         env: JniEnvironment,
         instance: JvmObject = JvmObject.NULL,
@@ -257,6 +270,7 @@ class JvmMethod(
         }
     }
 
+    @OptIn(UnsafeJniApi::class, InternalJniApi::class)
     inline fun callFloat(
         env: JniEnvironment,
         instance: JvmObject = JvmObject.NULL,
@@ -277,6 +291,7 @@ class JvmMethod(
         }
     }
 
+    @OptIn(InternalJniApi::class, UnsafeJniApi::class)
     inline fun callDouble(
         env: JniEnvironment,
         instance: JvmObject = JvmObject.NULL,
@@ -297,6 +312,7 @@ class JvmMethod(
         }
     }
 
+    @OptIn(UnsafeJniApi::class, InternalJniApi::class)
     inline fun callBoolean(
         env: JniEnvironment,
         instance: JvmObject = JvmObject.NULL,
@@ -317,7 +333,7 @@ class JvmMethod(
         }
     }
 
-    @OptIn(ExperimentalNativeApi::class)
+    @OptIn(ExperimentalNativeApi::class, UnsafeJniApi::class, InternalJniApi::class)
     inline fun callChar(
         env: JniEnvironment,
         instance: JvmObject = JvmObject.NULL,
@@ -340,7 +356,7 @@ class JvmMethod(
         }
     }
 
-    @OptIn(UnsafeJniApi::class)
+    @OptIn(UnsafeJniApi::class, InternalJniApi::class)
     inline fun callObject(
         env: JniEnvironment,
         instance: JvmObject = JvmObject.NULL,

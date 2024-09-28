@@ -29,7 +29,7 @@ import kotlinx.cinterop.pointed
 import kotlinx.cinterop.ptr
 
 class JvmClass internal constructor(
-    override val handle: JvmClassHandle?
+    @property:UnsafeJniApi override val handle: JvmClassHandle?
 ) : JvmObject, VisibilityProvider, AnnotationProvider {
     private val fields: ConcurrentMutableMap<FieldDescriptor, JvmField> = ConcurrentMutableMap()
     private val methods: ConcurrentMutableMap<MethodDescriptor, JvmMethod> = ConcurrentMutableMap()
@@ -132,6 +132,7 @@ class JvmClass internal constructor(
         }
     }
 
+    @OptIn(UnsafeJniApi::class)
     fun findFieldOrNull(env: JniEnvironment, descriptor: FieldDescriptor): JvmField? {
         if (descriptor in fields) return fields[descriptor]
         val handle = memScoped {
@@ -165,6 +166,7 @@ class JvmClass internal constructor(
     fun findField(env: JniEnvironment, closure: FieldDescriptorBuilder.() -> Unit): JvmField =
         findField(env, FieldDescriptor.create(closure))
 
+    @OptIn(UnsafeJniApi::class)
     fun findMethodOrNull(env: JniEnvironment, descriptor: MethodDescriptor): JvmMethod? {
         if (descriptor in methods) return methods[descriptor]
         val handle = memScoped {
@@ -279,6 +281,7 @@ class JvmClass internal constructor(
         }.callObject().uncheckedCast()
     }
 
+    @OptIn(UnsafeJniApi::class)
     fun registerNativeMethod(
         env: JniEnvironment,
         address: COpaquePointer,

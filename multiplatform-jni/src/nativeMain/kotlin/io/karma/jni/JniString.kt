@@ -55,10 +55,11 @@ fun String.toJStringOrNull(env: JniEnvironment): JvmStringHandle? {
 fun String.toJString(env: JniEnvironment): JvmStringHandle =
     requireNotNull(toJStringOrNull(env)) { "Could not convert native to JVM string" }
 
-value class JvmString private constructor(
-    override val handle: JvmStringHandle?
+value class JvmString @UnsafeJniApi private constructor(
+    @property:UnsafeJniApi override val handle: JvmStringHandle?
 ) : JvmObject {
     companion object {
+        @property:OptIn(UnsafeJniApi::class)
         val NULL: JvmString = JvmString(null)
 
         @UnsafeJniApi
@@ -78,7 +79,10 @@ value class JvmString private constructor(
         }
     }
 
+    @OptIn(UnsafeJniApi::class)
     fun get(env: JniEnvironment): String? = handle?.toKStringOrNull(env)
+
+    @OptIn(UnsafeJniApi::class)
     fun getLength(env: JniEnvironment): Int =
         env.pointed?.GetStringLength?.invoke(env.ptr, handle) ?: 0
 }

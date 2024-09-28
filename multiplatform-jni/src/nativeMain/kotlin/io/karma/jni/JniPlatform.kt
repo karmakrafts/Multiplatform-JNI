@@ -43,14 +43,36 @@ import kotlin.concurrent.AtomicReference
 import kotlin.experimental.ExperimentalNativeApi
 import kotlin.native.internal.NativePtr
 
+value class VirtualMachine private constructor(
+    @property:UnsafeJniApi val handle: VmHandle
+) {
+    companion object {
+        @UnsafeJniApi
+        fun fromHandle(handle: VmHandle): VirtualMachine = VirtualMachine(handle)
+    }
+}
+
 object JniPlatform {
     private val vmAddress: AtomicNativePtr = AtomicNativePtr(NativePtr.NULL)
-    var vm: JavaVm?
-        get() = interpretCPointer<JavaVm>(vmAddress.value)?.pointed
-        internal set(value) {
-            vmAddress.value = value?.rawPtr ?: NativePtr.NULL
+
+    @OptIn(UnsafeJniApi::class)
+    var vm: VirtualMachine?
+        get() = interpretCPointer<VmHandle>(vmAddress.value)?.pointed?.let {
+            VirtualMachine.fromHandle(
+                it
+            )
         }
-    val environment: ThreadLocalRef<JniEnvironment?> = ThreadLocalRef()
+        set(value) {
+            vmAddress.value = value?.handle?.rawPtr ?: NativePtr.NULL
+        }
+
+    private val environmentAddress: ThreadLocalRef<JniEnvironment?> = ThreadLocalRef()
+
+    var environment: JniEnvironment?
+        get() = environmentAddress.value
+        internal set(value) {
+            environmentAddress.value = value
+        }
 
     @InternalJniApi
     var loadCallback: AtomicReference<JniScope.() -> Unit> =
@@ -80,34 +102,34 @@ object JniPlatform {
 
     @UnsafeJniApi
     fun attach(): JniEnvironment? {
-        return if (environment.value != null) environment.value
+        return if (environment != null) environment
         else memScoped {
             val envAddress = allocPointerTo<JniEnvironment>()
-            if (vm?.pointed?.AttachCurrentThread?.invoke(
-                    vm?.ptr,
+            if (vm?.handle?.pointed?.AttachCurrentThread?.invoke(
+                    vm?.handle?.ptr,
                     envAddress.ptr.reinterpret(),
                     null
                 ) != JNI_OK
             ) return@memScoped null
-            environment.value = envAddress.pointed
-            environment.value
+            environment = envAddress.pointed
+            environment
         }
     }
 
     @UnsafeJniApi
     fun detach() {
-        if (environment.value == null) return
-        vm?.pointed?.DetachCurrentThread?.invoke(vm?.ptr)
-        environment.value = null
+        if (environment == null) return
+        vm?.handle?.pointed?.DetachCurrentThread?.invoke(vm?.handle?.ptr)
+        environment = null
     }
 }
 
-@OptIn(InternalJniApi::class)
+@OptIn(InternalJniApi::class, UnsafeJniApi::class)
 @Suppress("UNUSED_PARAMETER", "UNUSED")
 @CName("JNI_OnLoad")
-fun jniOnLoad(vm: JavaVm, reserved: COpaquePointer): JvmInt {
+fun jniOnLoad(vm: VmHandle, reserved: COpaquePointer): JvmInt {
     JniPlatform.let { platform ->
-        platform.vm = vm
+        platform.vm = VirtualMachine.fromHandle(vm)
         return vm.pointed?.let {
             memScoped {
                 val address = allocPointerTo<JniEnvironment>()
@@ -116,7 +138,7 @@ fun jniOnLoad(vm: JavaVm, reserved: COpaquePointer): JvmInt {
                     address.ptr.reinterpret(),
                     JNI_VERSION_1_8
                 )
-                platform.environment.value = address.pointed
+                platform.environment = address.pointed
                 jniScoped { JniPlatform.loadCallback.value(this) }
             }
             JNI_VERSION_1_8
@@ -127,7 +149,7 @@ fun jniOnLoad(vm: JavaVm, reserved: COpaquePointer): JvmInt {
 @OptIn(InternalJniApi::class)
 @Suppress("UNUSED_PARAMETER", "UNUSED")
 @CName("JNI_OnUnload")
-fun jniOnUnload(vm: JavaVm, reserved: COpaquePointer) {
+fun jniOnUnload(vm: VmHandle, reserved: COpaquePointer) {
     jniScoped { JniPlatform.unloadCallback.value(this) }
 }
 

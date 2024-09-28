@@ -26,6 +26,7 @@ import kotlinx.cinterop.ptr
 interface JvmObject {
     companion object {
         val NULL: JvmObjectRef = object : JvmObjectRef {
+            @property:OptIn(UnsafeJniApi::class)
             override val handle: JvmObjectHandle? = null
 
             @UnsafeJniApi
@@ -60,8 +61,10 @@ interface JvmObject {
         }
     }
 
+    @property:UnsafeJniApi
     val handle: JvmObjectHandle?
 
+    @OptIn(UnsafeJniApi::class)
     fun isNull(): Boolean = handle == null
 
     @UnsafeJniApi
@@ -128,8 +131,8 @@ interface JvmObject {
     }
 }
 
-internal value class SimpleJvmObject(
-    override val handle: JvmObjectHandle?
+internal value class SimpleJvmObject @UnsafeJniApi internal constructor(
+    @property:UnsafeJniApi override val handle: JvmObjectHandle?
 ) : JvmObject
 
 interface JvmObjectRef : JvmObject {
@@ -137,8 +140,8 @@ interface JvmObjectRef : JvmObject {
     fun delete(env: JniEnvironment)
 }
 
-internal value class JvmGlobalRef(
-    override val handle: JvmObjectHandle?
+internal value class JvmGlobalRef @UnsafeJniApi internal constructor(
+    @property:UnsafeJniApi override val handle: JvmObjectHandle?
 ) : JvmObjectRef {
     @UnsafeJniApi
     override fun createGlobalRef(env: JniEnvironment): JvmObjectRef = this
@@ -149,8 +152,8 @@ internal value class JvmGlobalRef(
     }
 }
 
-internal value class JvmLocalRef(
-    override val handle: JvmObjectHandle?
+internal value class JvmLocalRef @UnsafeJniApi internal constructor(
+    @property:UnsafeJniApi override val handle: JvmObjectHandle?
 ) : JvmObjectRef {
     @UnsafeJniApi
     override fun createLocalRef(env: JniEnvironment): JvmObjectRef = this
@@ -161,8 +164,8 @@ internal value class JvmLocalRef(
     }
 }
 
-internal value class JvmWeakRef(
-    override val handle: JvmObjectHandle?
+internal value class JvmWeakRef @UnsafeJniApi internal constructor(
+    @property:UnsafeJniApi override val handle: JvmObjectHandle?
 ) : JvmObjectRef {
     @UnsafeJniApi
     override fun createWeakRef(env: JniEnvironment): JvmObjectRef = this
