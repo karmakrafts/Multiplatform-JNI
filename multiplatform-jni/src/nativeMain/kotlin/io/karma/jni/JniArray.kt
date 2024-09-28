@@ -28,6 +28,8 @@ import jni.jlongVar
 import jni.jshortVar
 import kotlinx.cinterop.COpaque
 import kotlinx.cinterop.COpaquePointer
+import kotlinx.cinterop.CPointed
+import kotlinx.cinterop.CPointer
 import kotlinx.cinterop.CVariable
 import kotlinx.cinterop.ExperimentalForeignApi
 import kotlinx.cinterop.addressOf
@@ -43,7 +45,29 @@ import kotlinx.cinterop.sizeOf
 import kotlinx.cinterop.usePinned
 import platform.posix.memcpy
 import kotlin.experimental.ExperimentalNativeApi
-import kotlin.native.internal.NativePtr
+
+@UnsafeJniApi
+inline fun <reified T : CPointed> JvmArrayHandle.pin(env: JniEnvironment): CPointer<T> {
+    return requireNotNull(env.pointed?.GetPrimitiveArrayCritical?.invoke(env.ptr, this, null)) {
+        "Could not obtained address of pinned JVM array"
+    }.reinterpret()
+}
+
+@UnsafeJniApi
+fun JvmArrayHandle.unpin(env: JniEnvironment, address: COpaquePointer) {
+    env.pointed?.ReleasePrimitiveArrayCritical?.invoke(env.ptr, this, address, 0)
+}
+
+@UnsafeJniApi
+inline fun <reified T : CPointed, reified R> JvmArrayHandle.usePinned(
+    env: JniEnvironment,
+    closure: (CPointer<T>) -> R
+): R {
+    val address = pin<T>(env)
+    val result = closure(address)
+    unpin(env, address)
+    return result
+}
 
 value class JvmArray private constructor(
     override val handle: JvmArrayHandle?
@@ -73,14 +97,14 @@ value class JvmArray private constructor(
         from: COpaquePointer,
         elementSize: Int,
         range: IntRange
-    ) {
-        val to = env.pointed?.GetPrimitiveArrayCritical?.invoke(env.ptr, handle, null)
-        memcpy(
-            interpretCPointer<COpaque>(
-                to?.rawValue?.plus(range.first.toLong()) ?: NativePtr.NULL
-            ), from, (elementSize * (range.last - range.first)).convert()
-        )
-        env.pointed?.ReleasePrimitiveArrayCritical?.invoke(env.ptr, handle, to, 0)
+    ) = jniScoped(env) {
+        handle?.usePinned<COpaque, Unit> {
+            memcpy(
+                interpretCPointer<COpaque>(it.rawValue + range.first.toLong()),
+                from,
+                (elementSize * (range.last - range.first)).convert()
+            )
+        }
     }
 
     @UnsafeJniApi
@@ -96,16 +120,14 @@ value class JvmArray private constructor(
         to: COpaquePointer,
         elementSize: Int,
         range: IntRange
-    ) {
-        val from = env.pointed?.GetPrimitiveArrayCritical?.invoke(env.ptr, handle, null)
-        memcpy(
-            to,
-            interpretCPointer<COpaque>(
-                from?.rawValue?.plus(range.first.toLong()) ?: NativePtr.NULL
-            ),
-            (elementSize * (range.last - range.first)).convert()
-        )
-        env.pointed?.ReleasePrimitiveArrayCritical?.invoke(env.ptr, handle, from, 0)
+    ) = jniScoped(env) {
+        handle?.usePinned<COpaque, Unit> {
+            memcpy(
+                to,
+                interpretCPointer<COpaque>(it.rawValue + range.first.toLong()),
+                (elementSize * (range.last - range.first)).convert()
+            )
+        }
     }
 
     @UnsafeJniApi
@@ -117,52 +139,44 @@ value class JvmArray private constructor(
 
     // Setters
 
-    fun setByte(env: JniEnvironment, index: Int, value: Byte) {
-        val address = env.pointed?.GetPrimitiveArrayCritical?.invoke(env.ptr, handle, null)
-        address?.reinterpret<jbyteVar>()?.set(index, value)
-        env.pointed?.ReleasePrimitiveArrayCritical?.invoke(env.ptr, handle, address, 0)
+    @OptIn(UnsafeJniApi::class)
+    fun setByte(env: JniEnvironment, index: Int, value: Byte) = jniScoped(env) {
+        handle?.usePinned<jbyteVar, Unit> { it[index] = value }
     }
 
-    fun setShort(env: JniEnvironment, index: Int, value: Short) {
-        val address = env.pointed?.GetPrimitiveArrayCritical?.invoke(env.ptr, handle, null)
-        address?.reinterpret<jshortVar>()?.set(index, value)
-        env.pointed?.ReleasePrimitiveArrayCritical?.invoke(env.ptr, handle, address, 0)
+    @OptIn(UnsafeJniApi::class)
+    fun setShort(env: JniEnvironment, index: Int, value: Short) = jniScoped(env) {
+        handle?.usePinned<jshortVar, Unit> { it[index] = value }
     }
 
-    fun setInt(env: JniEnvironment, index: Int, value: Int) {
-        val address = env.pointed?.GetPrimitiveArrayCritical?.invoke(env.ptr, handle, null)
-        address?.reinterpret<jintVar>()?.set(index, value)
-        env.pointed?.ReleasePrimitiveArrayCritical?.invoke(env.ptr, handle, address, 0)
+    @OptIn(UnsafeJniApi::class)
+    fun setInt(env: JniEnvironment, index: Int, value: Int) = jniScoped(env) {
+        handle?.usePinned<jintVar, Unit> { it[index] = value }
     }
 
-    fun setLong(env: JniEnvironment, index: Int, value: Long) {
-        val address = env.pointed?.GetPrimitiveArrayCritical?.invoke(env.ptr, handle, null)
-        address?.reinterpret<jlongVar>()?.set(index, value)
-        env.pointed?.ReleasePrimitiveArrayCritical?.invoke(env.ptr, handle, address, 0)
+    @OptIn(UnsafeJniApi::class)
+    fun setLong(env: JniEnvironment, index: Int, value: Long) = jniScoped(env) {
+        handle?.usePinned<jlongVar, Unit> { it[index] = value }
     }
 
-    fun setFloat(env: JniEnvironment, index: Int, value: Float) {
-        val address = env.pointed?.GetPrimitiveArrayCritical?.invoke(env.ptr, handle, null)
-        address?.reinterpret<jfloatVar>()?.set(index, value)
-        env.pointed?.ReleasePrimitiveArrayCritical?.invoke(env.ptr, handle, address, 0)
+    @OptIn(UnsafeJniApi::class)
+    fun setFloat(env: JniEnvironment, index: Int, value: Float) = jniScoped(env) {
+        handle?.usePinned<jfloatVar, Unit> { it[index] = value }
     }
 
-    fun setDouble(env: JniEnvironment, index: Int, value: Double) {
-        val address = env.pointed?.GetPrimitiveArrayCritical?.invoke(env.ptr, handle, null)
-        address?.reinterpret<jdoubleVar>()?.set(index, value)
-        env.pointed?.ReleasePrimitiveArrayCritical?.invoke(env.ptr, handle, address, 0)
+    @OptIn(UnsafeJniApi::class)
+    fun setDouble(env: JniEnvironment, index: Int, value: Double) = jniScoped(env) {
+        handle?.usePinned<jdoubleVar, Unit> { it[index] = value }
     }
 
-    fun setBoolean(env: JniEnvironment, index: Int, value: Boolean) {
-        val address = env.pointed?.GetPrimitiveArrayCritical?.invoke(env.ptr, handle, null)
-        address?.reinterpret<jbooleanVar>()?.set(index, value.toJBoolean())
-        env.pointed?.ReleasePrimitiveArrayCritical?.invoke(env.ptr, handle, address, 0)
+    @OptIn(UnsafeJniApi::class)
+    fun setBoolean(env: JniEnvironment, index: Int, value: Boolean) = jniScoped(env) {
+        handle?.usePinned<jbooleanVar, Unit> { it[index] = value.toJBoolean() }
     }
 
-    fun setChar(env: JniEnvironment, index: Int, value: Char) {
-        val address = env.pointed?.GetPrimitiveArrayCritical?.invoke(env.ptr, handle, null)
-        address?.reinterpret<jcharVar>()?.set(index, value.code.toUShort())
-        env.pointed?.ReleasePrimitiveArrayCritical?.invoke(env.ptr, handle, address, 0)
+    @OptIn(UnsafeJniApi::class)
+    fun setChar(env: JniEnvironment, index: Int, value: Char) = jniScoped(env) {
+        handle?.usePinned<jcharVar, Unit> { it[index] = value.code.toUShort() }
     }
 
     fun setObject(env: JniEnvironment, index: Int, value: JvmObject) {
@@ -191,61 +205,44 @@ value class JvmArray private constructor(
 
     // Getters
 
-    fun getByte(env: JniEnvironment, index: Int): Byte {
-        val address = env.pointed?.GetPrimitiveArrayCritical?.invoke(env.ptr, handle, null)
-        val value = address?.reinterpret<jbyteVar>()?.get(index) ?: 0
-        env.pointed?.ReleasePrimitiveArrayCritical?.invoke(env.ptr, handle, address, 0)
-        return value
+    @OptIn(UnsafeJniApi::class)
+    fun getByte(env: JniEnvironment, index: Int): Byte = jniScoped(env) {
+        handle?.usePinned<jbyteVar, Byte> { it[index] } ?: 0
     }
 
-    fun getShort(env: JniEnvironment, index: Int): Short {
-        val address = env.pointed?.GetPrimitiveArrayCritical?.invoke(env.ptr, handle, null)
-        val value = address?.reinterpret<jshortVar>()?.get(index) ?: 0
-        env.pointed?.ReleasePrimitiveArrayCritical?.invoke(env.ptr, handle, address, 0)
-        return value
+    @OptIn(UnsafeJniApi::class)
+    fun getShort(env: JniEnvironment, index: Int): Short = jniScoped(env) {
+        handle?.usePinned<jshortVar, Short> { it[index] } ?: 0
     }
 
-    fun getInt(env: JniEnvironment, index: Int): Int {
-        val address = env.pointed?.GetPrimitiveArrayCritical?.invoke(env.ptr, handle, null)
-        val value = address?.reinterpret<jintVar>()?.get(index) ?: 0
-        env.pointed?.ReleasePrimitiveArrayCritical?.invoke(env.ptr, handle, address, 0)
-        return value
+    @OptIn(UnsafeJniApi::class)
+    fun getInt(env: JniEnvironment, index: Int): Int = jniScoped(env) {
+        handle?.usePinned<jintVar, Int> { it[index] } ?: 0
     }
 
-    fun getLong(env: JniEnvironment, index: Int): Long {
-        val address = env.pointed?.GetPrimitiveArrayCritical?.invoke(env.ptr, handle, null)
-        val value = address?.reinterpret<jlongVar>()?.get(index) ?: 0
-        env.pointed?.ReleasePrimitiveArrayCritical?.invoke(env.ptr, handle, address, 0)
-        return value
+    @OptIn(UnsafeJniApi::class)
+    fun getLong(env: JniEnvironment, index: Int): Long = jniScoped(env) {
+        handle?.usePinned<jlongVar, Long> { it[index] } ?: 0
     }
 
-    fun getFloat(env: JniEnvironment, index: Int): Float {
-        val address = env.pointed?.GetPrimitiveArrayCritical?.invoke(env.ptr, handle, null)
-        val value = address?.reinterpret<jfloatVar>()?.get(index) ?: 0F
-        env.pointed?.ReleasePrimitiveArrayCritical?.invoke(env.ptr, handle, address, 0)
-        return value
+    @OptIn(UnsafeJniApi::class)
+    fun getFloat(env: JniEnvironment, index: Int): Float = jniScoped(env) {
+        handle?.usePinned<jfloatVar, Float> { it[index] } ?: 0F
     }
 
-    fun getDouble(env: JniEnvironment, index: Int): Double {
-        val address = env.pointed?.GetPrimitiveArrayCritical?.invoke(env.ptr, handle, null)
-        val value = address?.reinterpret<jdoubleVar>()?.get(index) ?: 0.0
-        env.pointed?.ReleasePrimitiveArrayCritical?.invoke(env.ptr, handle, address, 0)
-        return value
+    @OptIn(UnsafeJniApi::class)
+    fun getDouble(env: JniEnvironment, index: Int): Double = jniScoped(env) {
+        handle?.usePinned<jdoubleVar, Double> { it[index] } ?: 0.0
     }
 
-    fun getBoolean(env: JniEnvironment, index: Int): Boolean {
-        val address = env.pointed?.GetPrimitiveArrayCritical?.invoke(env.ptr, handle, null)
-        val value = address?.reinterpret<jbooleanVar>()?.get(index)?.toKBoolean() ?: false
-        env.pointed?.ReleasePrimitiveArrayCritical?.invoke(env.ptr, handle, address, 0)
-        return value
+    @OptIn(UnsafeJniApi::class)
+    fun getBoolean(env: JniEnvironment, index: Int): Boolean = jniScoped(env) {
+        handle?.usePinned<jbooleanVar, Boolean> { it[index].toKBoolean() } ?: false
     }
 
-    @OptIn(ExperimentalNativeApi::class)
-    fun getChar(env: JniEnvironment, index: Int): Char {
-        val address = env.pointed?.GetPrimitiveArrayCritical?.invoke(env.ptr, handle, null)
-        val value = Char.toChars(address?.reinterpret<jcharVar>()?.get(index)?.toInt() ?: 0)[0]
-        env.pointed?.ReleasePrimitiveArrayCritical?.invoke(env.ptr, handle, address, 0)
-        return value
+    @OptIn(UnsafeJniApi::class, ExperimentalNativeApi::class)
+    fun getChar(env: JniEnvironment, index: Int): Char = jniScoped(env) {
+        handle?.usePinned<jcharVar, Char> { Char.toChars(it[index].toInt())[0] } ?: ' '
     }
 
     fun getObject(env: JniEnvironment, index: Int): JvmObject {

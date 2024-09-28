@@ -26,6 +26,7 @@ import jni.JavaVMVar
 import jni.jarray
 import jni.jboolean
 import jni.jbyte
+import jni.jbyteArray
 import jni.jclass
 import jni.jdouble
 import jni.jfieldID
@@ -35,6 +36,7 @@ import jni.jlong
 import jni.jmethodID
 import jni.jobject
 import jni.jshort
+import jni.jshortArray
 import jni.jstring
 import jni.jvalue
 import kotlinx.cinterop.ExperimentalForeignApi

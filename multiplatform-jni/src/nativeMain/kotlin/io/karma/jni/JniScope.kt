@@ -21,6 +21,8 @@ package io.karma.jni
 import io.karma.jni.JvmObject.Companion.cast
 import jni.jstring
 import kotlinx.cinterop.COpaquePointer
+import kotlinx.cinterop.CPointed
+import kotlinx.cinterop.CPointer
 import kotlinx.cinterop.CVariable
 import kotlinx.cinterop.ExperimentalForeignApi
 
@@ -177,6 +179,16 @@ value class JniScope(val env: JniEnvironment) {
         get() = get(env)
     val JvmString.length: Int
         get() = getLength(env)
+
+    @UnsafeJniApi
+    inline fun <reified T : CPointed> JvmArrayHandle.pin(): CPointer<T> = pin(env)
+
+    @UnsafeJniApi
+    fun JvmArrayHandle.unpin(address: COpaquePointer) = unpin(env, address)
+
+    @UnsafeJniApi
+    inline fun <reified T : CPointed, reified R> JvmArrayHandle.usePinned(closure: (CPointer<T>) -> R): R =
+        usePinned<T, R>(env, closure)
 
     @UnsafeJniApi
     fun JvmArray.copyPrimitiveDataFrom(from: COpaquePointer, elementSize: Int, range: IntRange) =
