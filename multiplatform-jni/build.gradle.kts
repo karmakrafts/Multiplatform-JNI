@@ -96,8 +96,8 @@ kotlin {
         target.apply {
             compilations["main"].cinterops {
                 val dlfcn by creating {
-                    compilerOpts("-I/usr/include")
-                    headers("/usr/include/dlfcn.h")
+                    compilerOpts("-I/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk/usr/include")
+                    headers("/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk/usr/include/dlfcn.h")
                 }
                 val jni by creating {
                     compilerOpts("-I${jniHome / "include"}", "-I${jniHome / "include" / "darwin"}")
@@ -107,9 +107,6 @@ kotlin {
             binaries {
                 framework {
                     baseName = "MultiplatformJNI"
-                }
-                sharedLib {
-                    linkerOpts("-L/usr/lib", "-ldl")
                 }
             }
         }
