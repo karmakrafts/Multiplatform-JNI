@@ -61,6 +61,7 @@ value class JvmString private constructor(
     companion object {
         val NULL: JvmString = JvmString(null)
 
+        @UnsafeJniApi
         fun fromHandle(handle: JvmStringHandle?): JvmString {
             return if (handle == null) NULL
             else JvmString(handle)
@@ -69,6 +70,7 @@ value class JvmString private constructor(
         @UnsafeJniApi
         fun fromUnchecked(obj: JvmObject): JvmString = fromHandle(obj.handle)
 
+        @OptIn(UnsafeJniApi::class)
         fun create(env: JniEnvironment, value: String): JvmString {
             return memScoped {
                 fromHandle(env.pointed?.NewStringUTF?.invoke(env.ptr, allocCString(value)))

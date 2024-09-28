@@ -18,7 +18,8 @@
 
 package io.karma.jni
 
-import io.karma.jni.JvmObject.Companion.cast
+import io.karma.jni.JvmArray.Companion.copyPrimitiveDataFrom
+import io.karma.jni.JvmArray.Companion.copyPrimitiveDataTo
 import jni.jstring
 import kotlinx.cinterop.COpaquePointer
 import kotlinx.cinterop.CPointed
@@ -179,8 +180,6 @@ value class JniScope(val env: JniEnvironment) {
     fun JvmObject.isInstance(clazz: JvmClass): Boolean = isInstance(env, clazz)
     fun JvmObject.toKString(): String = toKString(env)
 
-    inline fun <reified T : JvmObject> JvmObject.cast(): T = cast<T>(env)
-
     fun JvmString.Companion.create(value: String): JvmString = create(env, value)
 
     val JvmString.value: String?
@@ -197,6 +196,13 @@ value class JniScope(val env: JniEnvironment) {
     @UnsafeJniApi
     inline fun <reified T : CPointed, reified R> JvmArrayHandle.usePinned(closure: (CPointer<T>) -> R): R =
         usePinned<T, R>(env, closure)
+
+    val JvmArray.componentTypeClass: JvmClass
+        get() = getComponentTypeClass(env)
+    val JvmArray.length: Int
+        get() = getLength(env)
+    val JvmArray.indices: IntRange
+        get() = 0..<getLength(env)
 
     @UnsafeJniApi
     fun JvmArray.copyPrimitiveDataFrom(from: COpaquePointer, elementSize: Int, range: IntRange) =
@@ -218,46 +224,185 @@ value class JniScope(val env: JniEnvironment) {
         range: IntRange
     ) = copyPrimitiveDataTo<T>(env, to, range)
 
-    fun JvmArray.setByte(index: Int, value: Byte) = setByte(env, index, value)
-    fun JvmArray.setShort(index: Int, value: Short) = setShort(env, index, value)
-    fun JvmArray.setInt(index: Int, value: Int) = setInt(env, index, value)
-    fun JvmArray.setLong(index: Int, value: Long) = setLong(env, index, value)
-    fun JvmArray.setFloat(index: Int, value: Float) = setFloat(env, index, value)
-    fun JvmArray.setDouble(index: Int, value: Double) = setDouble(env, index, value)
-    fun JvmArray.setBoolean(index: Int, value: Boolean) = setBoolean(env, index, value)
-    fun JvmArray.setChar(index: Int, value: Char) = setChar(env, index, value)
-    fun JvmArray.setObject(index: Int, value: JvmObject) = setObject(env, index, value)
+    fun JvmGenericArray.setByte(index: Int, value: Byte) = setByte(env, index, value)
+    fun JvmGenericArray.setShort(index: Int, value: Short) = setShort(env, index, value)
+    fun JvmGenericArray.setInt(index: Int, value: Int) = setInt(env, index, value)
+    fun JvmGenericArray.setLong(index: Int, value: Long) = setLong(env, index, value)
+    fun JvmGenericArray.setFloat(index: Int, value: Float) = setFloat(env, index, value)
+    fun JvmGenericArray.setDouble(index: Int, value: Double) = setDouble(env, index, value)
+    fun JvmGenericArray.setBoolean(index: Int, value: Boolean) = setBoolean(env, index, value)
+    fun JvmGenericArray.setChar(index: Int, value: Char) = setChar(env, index, value)
+    fun JvmGenericArray.setObject(index: Int, value: JvmObject) = setObject(env, index, value)
 
-    inline operator fun <reified R> JvmArray.set(index: Int, value: R) = set<R>(env, index, value)
+    inline operator fun <reified R> JvmGenericArray.set(index: Int, value: R) =
+        set<R>(env, index, value)
 
-    fun JvmArray.getByte(index: Int): Byte = getByte(env, index)
-    fun JvmArray.getShort(index: Int): Short = getShort(env, index)
-    fun JvmArray.getInt(index: Int): Int = getInt(env, index)
-    fun JvmArray.getLong(index: Int): Long = getLong(env, index)
-    fun JvmArray.getFloat(index: Int): Float = getFloat(env, index)
-    fun JvmArray.getDouble(index: Int): Double = getDouble(env, index)
-    fun JvmArray.getBoolean(index: Int): Boolean = getBoolean(env, index)
-    fun JvmArray.getChar(index: Int): Char = getChar(env, index)
-    fun JvmArray.getObject(index: Int): JvmObject = getObject(env, index)
+    fun JvmGenericArray.getByte(index: Int): Byte = getByte(env, index)
+    fun JvmGenericArray.getShort(index: Int): Short = getShort(env, index)
+    fun JvmGenericArray.getInt(index: Int): Int = getInt(env, index)
+    fun JvmGenericArray.getLong(index: Int): Long = getLong(env, index)
+    fun JvmGenericArray.getFloat(index: Int): Float = getFloat(env, index)
+    fun JvmGenericArray.getDouble(index: Int): Double = getDouble(env, index)
+    fun JvmGenericArray.getBoolean(index: Int): Boolean = getBoolean(env, index)
+    fun JvmGenericArray.getChar(index: Int): Char = getChar(env, index)
+    fun JvmGenericArray.getObject(index: Int): JvmObject = getObject(env, index)
 
-    inline operator fun <reified R> JvmArray.get(index: Int): R = get<R>(env, index)
+    inline operator fun <reified R> JvmGenericArray.get(index: Int): R = get<R>(env, index)
 
-    fun JvmArray.toByteArray(): ByteArray = toByteArray(env)
-    fun JvmArray.toShortArray(): ShortArray = toShortArray(env)
-    fun JvmArray.toIntArray(): IntArray = toIntArray(env)
-    fun JvmArray.toLongArray(): LongArray = toLongArray(env)
-    fun JvmArray.toFloatArray(): FloatArray = toFloatArray(env)
-    fun JvmArray.toDoubleArray(): DoubleArray = toDoubleArray(env)
-    fun JvmArray.toBooleanArray(): BooleanArray = toBooleanArray(env)
-    fun JvmArray.toCharArray(): CharArray = toCharArray(env)
-    fun JvmArray.toObjectArray(): Array<JvmObject> = toObjectArray(env)
+    fun JvmGenericArray.toByteArray(): ByteArray = toByteArray(env)
+    fun JvmGenericArray.toShortArray(): ShortArray = toShortArray(env)
+    fun JvmGenericArray.toIntArray(): IntArray = toIntArray(env)
+    fun JvmGenericArray.toLongArray(): LongArray = toLongArray(env)
+    fun JvmGenericArray.toFloatArray(): FloatArray = toFloatArray(env)
+    fun JvmGenericArray.toDoubleArray(): DoubleArray = toDoubleArray(env)
+    fun JvmGenericArray.toBooleanArray(): BooleanArray = toBooleanArray(env)
+    fun JvmGenericArray.toCharArray(): CharArray = toCharArray(env)
+    fun JvmGenericArray.toObjectArray(): Array<JvmObject> = toObjectArray(env)
 
-    val JvmArray.componentTypeClass: JvmClass
-        get() = getComponentTypeClass(env)
-    val JvmArray.length: Int
-        get() = getLength(env)
-    val JvmArray.indices: IntRange
-        get() = 0..<getLength(env)
+    @UnsafeJniApi
+    fun JvmByteArray.copyDataFrom(from: COpaquePointer, range: IntRange) =
+        copyDataFrom(env, from, range)
+
+    @UnsafeJniApi
+    fun JvmByteArray.copyDataTo(to: COpaquePointer, range: IntRange) =
+        copyDataTo(env, to, range)
+
+    operator fun JvmByteArray.get(index: Int): Byte = get(env, index)
+    operator fun JvmByteArray.set(index: Int, value: Byte) = set(env, index, value)
+    fun JvmByteArray.toArray(): ByteArray = toArray(env)
+    fun JvmByteArray.iterator(): ByteIterator = object : ByteIterator() {
+        private var index: Int = 0
+        override fun nextByte(): Byte = get(index++)
+        override fun hasNext(): Boolean = index < length
+    }
+
+    @UnsafeJniApi
+    fun JvmShortArray.copyDataFrom(from: COpaquePointer, range: IntRange) =
+        copyDataFrom(env, from, range)
+
+    @UnsafeJniApi
+    fun JvmShortArray.copyDataTo(to: COpaquePointer, range: IntRange) =
+        copyDataTo(env, to, range)
+
+    operator fun JvmShortArray.get(index: Int): Short = get(env, index)
+    operator fun JvmShortArray.set(index: Int, value: Short) = set(env, index, value)
+    fun JvmShortArray.toArray(): ShortArray = toArray(env)
+    fun JvmShortArray.iterator(): ShortIterator = object : ShortIterator() {
+        private var index: Int = 0
+        override fun nextShort(): Short = get(index++)
+        override fun hasNext(): Boolean = index < length
+    }
+
+    @UnsafeJniApi
+    fun JvmIntArray.copyDataFrom(from: COpaquePointer, range: IntRange) =
+        copyDataFrom(env, from, range)
+
+    @UnsafeJniApi
+    fun JvmIntArray.copyDataTo(to: COpaquePointer, range: IntRange) =
+        copyDataTo(env, to, range)
+
+    operator fun JvmIntArray.get(index: Int): Int = get(env, index)
+    operator fun JvmIntArray.set(index: Int, value: Int) = set(env, index, value)
+    fun JvmIntArray.toArray(): IntArray = toArray(env)
+    fun JvmIntArray.iterator(): IntIterator = object : IntIterator() {
+        private var index: Int = 0
+        override fun nextInt(): Int = get(index++)
+        override fun hasNext(): Boolean = index < length
+    }
+
+    @UnsafeJniApi
+    fun JvmLongArray.copyDataFrom(from: COpaquePointer, range: IntRange) =
+        copyDataFrom(env, from, range)
+
+    @UnsafeJniApi
+    fun JvmLongArray.copyDataTo(to: COpaquePointer, range: IntRange) =
+        copyDataTo(env, to, range)
+
+    operator fun JvmLongArray.get(index: Int): Long = get(env, index)
+    operator fun JvmLongArray.set(index: Int, value: Long) = set(env, index, value)
+    fun JvmLongArray.toArray(): LongArray = toArray(env)
+    fun JvmLongArray.iterator(): LongIterator = object : LongIterator() {
+        private var index: Int = 0
+        override fun nextLong(): Long = get(index++)
+        override fun hasNext(): Boolean = index < length
+    }
+
+    @UnsafeJniApi
+    fun JvmFloatArray.copyDataFrom(from: COpaquePointer, range: IntRange) =
+        copyDataFrom(env, from, range)
+
+    @UnsafeJniApi
+    fun JvmFloatArray.copyDataTo(to: COpaquePointer, range: IntRange) =
+        copyDataTo(env, to, range)
+
+    operator fun JvmFloatArray.get(index: Int): Float = get(env, index)
+    operator fun JvmFloatArray.set(index: Int, value: Float) = set(env, index, value)
+    fun JvmFloatArray.toArray(): FloatArray = toArray(env)
+    fun JvmFloatArray.iterator(): FloatIterator = object : FloatIterator() {
+        private var index: Int = 0
+        override fun nextFloat(): Float = get(index++)
+        override fun hasNext(): Boolean = index < length
+    }
+
+    @UnsafeJniApi
+    fun JvmDoubleArray.copyDataFrom(from: COpaquePointer, range: IntRange) =
+        copyDataFrom(env, from, range)
+
+    @UnsafeJniApi
+    fun JvmDoubleArray.copyDataTo(to: COpaquePointer, range: IntRange) =
+        copyDataTo(env, to, range)
+
+    operator fun JvmDoubleArray.get(index: Int): Double = get(env, index)
+    operator fun JvmDoubleArray.set(index: Int, value: Double) = set(env, index, value)
+    fun JvmDoubleArray.toArray(): DoubleArray = toArray(env)
+    fun JvmDoubleArray.iterator(): DoubleIterator = object : DoubleIterator() {
+        private var index: Int = 0
+        override fun nextDouble(): Double = get(index++)
+        override fun hasNext(): Boolean = index < length
+    }
+
+    @UnsafeJniApi
+    fun JvmBooleanArray.copyDataFrom(from: COpaquePointer, range: IntRange) =
+        copyDataFrom(env, from, range)
+
+    @UnsafeJniApi
+    fun JvmBooleanArray.copyDataTo(to: COpaquePointer, range: IntRange) =
+        copyDataTo(env, to, range)
+
+    operator fun JvmBooleanArray.get(index: Int): Boolean = get(env, index)
+    operator fun JvmBooleanArray.set(index: Int, value: Boolean) = set(env, index, value)
+    fun JvmBooleanArray.toArray(): BooleanArray = toArray(env)
+    fun JvmBooleanArray.iterator(): BooleanIterator = object : BooleanIterator() {
+        private var index: Int = 0
+        override fun nextBoolean(): Boolean = get(index++)
+        override fun hasNext(): Boolean = index < length
+    }
+
+    @UnsafeJniApi
+    fun JvmCharArray.copyDataFrom(from: COpaquePointer, range: IntRange) =
+        copyDataFrom(env, from, range)
+
+    @UnsafeJniApi
+    fun JvmCharArray.copyDataTo(to: COpaquePointer, range: IntRange) =
+        copyDataTo(env, to, range)
+
+    operator fun JvmCharArray.get(index: Int): Char = get(env, index)
+    operator fun JvmCharArray.set(index: Int, value: Char) = set(env, index, value)
+    fun JvmCharArray.toArray(): CharArray = toArray(env)
+    fun JvmCharArray.iterator(): CharIterator = object : CharIterator() {
+        private var index: Int = 0
+        override fun nextChar(): Char = get(index++)
+        override fun hasNext(): Boolean = index < length
+    }
+
+    operator fun JvmObjectArray.get(index: Int): JvmObject = get(env, index)
+    operator fun JvmObjectArray.set(index: Int, value: JvmObject) = set(env, index, value)
+    fun JvmObjectArray.toArray(): Array<JvmObject> = toArray(env)
+    fun JvmObjectArray.iterator(): Iterator<JvmObject> = object : Iterator<JvmObject> {
+        private var index: Int = 0
+        override fun next(): JvmObject = get(index++)
+        override fun hasNext(): Boolean = index < length
+    }
 }
 
 @OptIn(UnsafeJniApi::class)

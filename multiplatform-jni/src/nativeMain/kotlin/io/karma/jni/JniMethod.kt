@@ -18,7 +18,7 @@
 
 package io.karma.jni
 
-import io.karma.jni.JvmObject.Companion.cast
+import io.karma.jni.JvmObject.Companion.uncheckedCast
 import kotlinx.cinterop.COpaquePointer
 import kotlinx.cinterop.CPointer
 import kotlinx.cinterop.ExperimentalForeignApi
@@ -340,6 +340,7 @@ class JvmMethod(
         }
     }
 
+    @OptIn(UnsafeJniApi::class)
     inline fun callObject(
         env: JniEnvironment,
         instance: JvmObject = JvmObject.NULL,
@@ -361,11 +362,12 @@ class JvmMethod(
         }
     }
 
+    @OptIn(UnsafeJniApi::class)
     inline fun <reified R : JvmObject> callObject(
         env: JniEnvironment,
         instance: JvmObject = JvmObject.NULL,
         args: ArgumentScope.() -> Unit = {}
-    ): R = callObject(env, instance, args).cast(env)
+    ): R = callObject(env, instance, args).uncheckedCast<R>()
 
     @OptIn(UnsafeJniApi::class)
     @Suppress("IMPLICIT_CAST_TO_ANY")
@@ -384,13 +386,30 @@ class JvmMethod(
             Boolean::class -> callBoolean(env, instance, closure)
             Char::class -> callChar(env, instance, closure)
             JvmObject::class -> callObject(env, instance, closure)
-            JvmString::class -> callObject(env, instance, closure).cast(env)
-            JvmClass::class -> callObject(env, instance, closure).cast(env)
-            JvmArray::class -> JvmArray.fromUnchecked(callObject(env, instance, closure))
+            JvmString::class -> JvmString.fromUnchecked(callObject(env, instance, closure))
+            JvmClass::class -> JvmClass.fromUnchecked(callObject(env, instance, closure))
+            JvmArray::class, JvmGenericArray::class -> JvmGenericArray.fromUnchecked(
+                callObject(
+                    env,
+                    instance,
+                    closure
+                )
+            )
+
+            JvmByteArray::class -> JvmByteArray.fromUnchecked(callObject(env, instance, closure))
+            JvmShortArray::class -> JvmShortArray.fromUnchecked(callObject(env, instance, closure))
+            JvmIntArray::class -> JvmIntArray.fromUnchecked(callObject(env, instance))
+            JvmLongArray::class -> JvmLongArray.fromUnchecked(callObject(env, instance))
+            JvmFloatArray::class -> JvmFloatArray.fromUnchecked(callObject(env, instance))
+            JvmDoubleArray::class -> JvmDoubleArray.fromUnchecked(callObject(env, instance))
+            JvmBooleanArray::class -> JvmBooleanArray.fromUnchecked(callObject(env, instance))
+            JvmCharArray::class -> JvmCharArray.fromUnchecked(callObject(env, instance))
+            JvmObjectArray::class -> JvmObjectArray.fromUnchecked(callObject(env, instance))
             else -> throw IllegalArgumentException("Unsupported return type")
         } as R
     }
 
+    @OptIn(UnsafeJniApi::class)
     fun getInstance(env: JniEnvironment): JvmObject =
         JvmObject.fromHandle(
             env.pointed?.ToReflectedMethod?.invoke(

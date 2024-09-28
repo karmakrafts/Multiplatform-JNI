@@ -18,7 +18,7 @@
 
 package io.karma.jni
 
-import io.karma.jni.JvmObject.Companion.cast
+import io.karma.jni.JvmObject.Companion.uncheckedCast
 import kotlinx.cinterop.ExperimentalForeignApi
 import kotlinx.cinterop.convert
 import kotlinx.cinterop.invoke
@@ -155,6 +155,7 @@ class JvmField(
         )[0]
     }
 
+    @OptIn(UnsafeJniApi::class)
     fun getObject(env: JniEnvironment, instance: JvmObject = JvmObject.NULL): JvmObject {
         if (descriptor.isStatic) {
             return JvmObject.fromHandle(
@@ -175,11 +176,12 @@ class JvmField(
         )
     }
 
+    @OptIn(UnsafeJniApi::class)
     inline fun <reified R : JvmObject> getObject(
         env: JniEnvironment,
         instance: JvmObject = JvmObject.NULL
     ): R {
-        return getObject(env, instance).cast(env)
+        return getObject(env, instance).uncheckedCast<R>()
     }
 
     @OptIn(UnsafeJniApi::class)
@@ -195,9 +197,24 @@ class JvmField(
             Boolean::class -> getBoolean(env, instance)
             Char::class -> getChar(env, instance)
             JvmObject::class -> getObject(env, instance)
-            JvmString::class -> getObject(env, instance).cast(env)
-            JvmClass::class -> getObject(env, instance).cast(env)
-            JvmArray::class -> JvmArray.fromUnchecked(getObject(env, instance))
+            JvmString::class -> JvmString.fromUnchecked(getObject(env, instance))
+            JvmClass::class -> JvmClass.fromUnchecked(getObject(env, instance))
+            JvmArray::class, JvmGenericArray::class -> JvmGenericArray.fromUnchecked(
+                getObject(
+                    env,
+                    instance
+                )
+            )
+
+            JvmByteArray::class -> JvmByteArray.fromUnchecked(getObject(env, instance))
+            JvmShortArray::class -> JvmShortArray.fromUnchecked(getObject(env, instance))
+            JvmIntArray::class -> JvmIntArray.fromUnchecked(getObject(env, instance))
+            JvmLongArray::class -> JvmLongArray.fromUnchecked(getObject(env, instance))
+            JvmFloatArray::class -> JvmFloatArray.fromUnchecked(getObject(env, instance))
+            JvmDoubleArray::class -> JvmDoubleArray.fromUnchecked(getObject(env, instance))
+            JvmBooleanArray::class -> JvmBooleanArray.fromUnchecked(getObject(env, instance))
+            JvmCharArray::class -> JvmCharArray.fromUnchecked(getObject(env, instance))
+            JvmObjectArray::class -> JvmObjectArray.fromUnchecked(getObject(env, instance))
             else -> throw IllegalArgumentException("Unsupported field type")
         } as R
     }
@@ -314,7 +331,10 @@ class JvmField(
             Double::class -> setDouble(env, value as Double, instance)
             Boolean::class -> setBoolean(env, value as Boolean, instance)
             Char::class -> setChar(env, value as Char, instance)
-            JvmObject::class, JvmString::class, JvmClass::class, JvmArray::class -> setObject(
+            JvmObject::class, JvmString::class, JvmClass::class, JvmArray::class,
+            JvmGenericArray::class, JvmByteArray::class, JvmShortArray::class, JvmIntArray::class,
+            JvmLongArray::class, JvmFloatArray::class, JvmDoubleArray::class, JvmBooleanArray::class,
+            JvmCharArray::class, JvmObjectArray::class -> setObject(
                 env,
                 value as JvmObject,
                 instance
@@ -324,6 +344,7 @@ class JvmField(
         }
     }
 
+    @OptIn(UnsafeJniApi::class)
     fun getInstance(env: JniEnvironment): JvmObject =
         JvmObject.fromHandle(
             env.pointed?.ToReflectedField?.invoke(

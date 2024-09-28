@@ -33,18 +33,28 @@ interface JvmObject {
             }
         }
 
+        @UnsafeJniApi
         fun fromHandle(handle: JvmObjectHandle?): JvmObject {
             return if (handle == null) NULL
             else SimpleJvmObject(handle)
         }
 
-        @OptIn(UnsafeJniApi::class)
-        inline fun <reified T : JvmObject> JvmObject.cast(env: JniEnvironment): T {
+        @UnsafeJniApi
+        inline fun <reified T : JvmObject> JvmObject.uncheckedCast(): T {
             return when (T::class) {
                 JvmObject::class, JvmObjectRef::class -> this
-                JvmString::class -> JvmString.fromUnchecked(cast(env, Type.STRING))
-                JvmClass::class -> JvmClass.fromUnchecked(cast(env, Type.CLASS))
-                JvmArray::class -> JvmArray.fromUnchecked(this) // We can't do any checked casts here..
+                JvmString::class -> JvmString.fromUnchecked(this)
+                JvmClass::class -> JvmClass.fromUnchecked(this)
+                JvmArray::class, JvmGenericArray::class -> JvmGenericArray.fromUnchecked(this)
+                JvmByteArray::class -> JvmByteArray.fromUnchecked(this)
+                JvmShortArray::class -> JvmShortArray.fromUnchecked(this)
+                JvmIntArray::class -> JvmIntArray.fromUnchecked(this)
+                JvmLongArray::class -> JvmLongArray.fromUnchecked(this)
+                JvmFloatArray::class -> JvmFloatArray.fromUnchecked(this)
+                JvmDoubleArray::class -> JvmDoubleArray.fromUnchecked(this)
+                JvmBooleanArray::class -> JvmBooleanArray.fromUnchecked(this)
+                JvmCharArray::class -> JvmCharArray.fromUnchecked(this)
+                JvmObjectArray::class -> JvmObjectArray.fromUnchecked(this)
                 else -> throw IllegalArgumentException("Unsupported type conversion $this -> ${T::class}")
             } as T
         }
@@ -72,6 +82,7 @@ interface JvmObject {
         else JvmWeakRef(env.pointed?.NewWeakGlobalRef?.invoke(env.ptr, handle))
     }
 
+    @OptIn(UnsafeJniApi::class)
     fun getTypeClass(env: JniEnvironment): JvmClass =
         JvmClass.fromHandle(env.pointed?.GetObjectClass?.invoke(env.ptr, handle))
 
@@ -106,12 +117,13 @@ interface JvmObject {
     fun isInstance(env: JniEnvironment, clazz: JvmClass): Boolean =
         isInstance(env, clazz.getType(env))
 
+    @OptIn(UnsafeJniApi::class)
     fun toKString(env: JniEnvironment): String = jniScoped(env) {
         typeClass.findMethod {
             name = "toString"
             returnType = Type.STRING
         }.callObject(this@JvmObject)
-            .cast<JvmString>()
+            .uncheckedCast<JvmString>()
             .value ?: "null"
     }
 }

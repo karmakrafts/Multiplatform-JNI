@@ -19,6 +19,7 @@
 package io.karma.jni
 
 import co.touchlab.stately.collections.ConcurrentMutableMap
+import io.karma.jni.JvmObject.Companion.uncheckedCast
 import io.karma.jni.MethodDescriptor.Companion.allocNativeMethod
 import kotlinx.cinterop.COpaquePointer
 import kotlinx.cinterop.ExperimentalForeignApi
@@ -37,6 +38,7 @@ class JvmClass internal constructor(
         val NULL: JvmClass = JvmClass(null)
         private val cache: ConcurrentMutableMap<JvmClassHandle, JvmClass> = ConcurrentMutableMap()
 
+        @UnsafeJniApi
         fun fromHandle(handle: JvmClassHandle?): JvmClass {
             return if (handle == null) NULL
             else cache.getOrPut(handle) { JvmClass(handle) }
@@ -59,6 +61,7 @@ class JvmClass internal constructor(
             requireNotNull(findOrNull(env, type)) { "Could not find class" }
     }
 
+    @OptIn(UnsafeJniApi::class)
     fun unreflectField(env: JniEnvironment, field: JvmObject): JvmField = jniScoped(env) {
         val descriptor = FieldDescriptor.create {
             val fieldClass = JvmClass.find(Type.FIELD)
@@ -67,13 +70,13 @@ class JvmClass internal constructor(
                 name = "getName"
                 returnType = Type.STRING
                 callType = CallType.DIRECT
-            }.callObject(field).cast<JvmString>().value) { "Field name must not be null" }
+            }.callObject(field).uncheckedCast<JvmString>().value) { "Field name must not be null" }
 
             type = fieldClass.findMethod {
                 name = "getType"
                 returnType = Type.CLASS
                 callType = CallType.DIRECT
-            }.callObject(field).cast<JvmClass>().type
+            }.callObject(field).uncheckedCast<JvmClass>().type
 
             isStatic = fieldClass.findMethod {
                 name = "getModifiers"
@@ -88,6 +91,7 @@ class JvmClass internal constructor(
         }
     }
 
+    @OptIn(UnsafeJniApi::class)
     fun unreflectMethod(env: JniEnvironment, method: JvmObject): JvmMethod = jniScoped(env) {
         val descriptor = MethodDescriptor.create {
             val methodClass = JvmClass.find(Type.CLASS)
@@ -96,22 +100,22 @@ class JvmClass internal constructor(
                 name = "getName"
                 returnType = Type.STRING
                 callType = CallType.DIRECT
-            }.callObject(method).cast<JvmString>().value) { "Field name must not be null" }
+            }.callObject(method).uncheckedCast<JvmString>().value) { "Field name must not be null" }
 
             returnType = methodClass.findMethod {
                 name = "getReturnType"
                 returnType = Type.CLASS
                 callType = CallType.DIRECT
-            }.callObject(method).cast<JvmClass>().type
+            }.callObject(method).uncheckedCast<JvmClass>().type
 
             parameterTypes += methodClass.findMethod {
                 name = "getParameterTypes"
                 returnType = Type.CLASS.array()
                 callType = CallType.DIRECT
             }.callObject(method)
-                .cast<JvmArray>()
+                .uncheckedCast<JvmGenericArray>()
                 .toObjectArray()
-                .map { it.cast<JvmClass>().type }
+                .map { it.uncheckedCast<JvmClass>().type }
 
             callType = methodClass.findMethod {
                 name = "getModifiers"
@@ -194,13 +198,14 @@ class JvmClass internal constructor(
     fun findMethod(env: JniEnvironment, closure: MethodDescriptorBuilder.() -> Unit): JvmMethod =
         findMethod(env, MethodDescriptor.create(closure))
 
+    @OptIn(UnsafeJniApi::class)
     fun getType(env: JniEnvironment): Type = jniScoped(env) {
         findMethod {
             name = "getName"
             returnType = Type.STRING
             callType = CallType.DIRECT
         }.callObject(this@JvmClass)
-            .cast<JvmString>()
+            .uncheckedCast<JvmString>()
             .value
             ?.let(Type::get)
             ?: NullType
@@ -242,33 +247,36 @@ class JvmClass internal constructor(
         }
     }
 
+    @OptIn(UnsafeJniApi::class)
     fun getFields(env: JniEnvironment): List<JvmField> = jniScoped(env) {
         findMethod {
             name = "getDeclaredFields"
             returnType = Type.FIELD.array()
             callType = CallType.DIRECT
         }.callObject(this@JvmClass)
-            .cast<JvmArray>()
+            .uncheckedCast<JvmGenericArray>()
             .toObjectArray()
             .map { unreflectField(it) }
     }
 
+    @OptIn(UnsafeJniApi::class)
     fun getMethods(env: JniEnvironment): List<JvmMethod> = jniScoped(env) {
         findMethod {
             name = "getDeclaredMethods"
             returnType = Type.METHOD.array()
             callType = CallType.DIRECT
         }.callObject(this@JvmClass)
-            .cast<JvmArray>()
+            .uncheckedCast<JvmGenericArray>()
             .toObjectArray()
             .map { unreflectMethod(it) }
     }
 
+    @OptIn(UnsafeJniApi::class)
     fun getComponentTypeClass(env: JniEnvironment): JvmClass = jniScoped(env) {
         findMethod {
             name = "getComponentType"
             returnType = Type.CLASS
-        }.callObject().cast()
+        }.callObject().uncheckedCast()
     }
 
     fun registerNativeMethod(

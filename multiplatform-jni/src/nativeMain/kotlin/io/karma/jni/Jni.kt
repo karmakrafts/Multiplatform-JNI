@@ -25,16 +25,25 @@ import jni.JNI_TRUE
 import jni.JavaVMVar
 import jni.jarray
 import jni.jboolean
+import jni.jbooleanArray
 import jni.jbyte
+import jni.jbyteArray
+import jni.jcharArray
 import jni.jclass
 import jni.jdouble
+import jni.jdoubleArray
 import jni.jfieldID
 import jni.jfloat
+import jni.jfloatArray
 import jni.jint
+import jni.jintArray
 import jni.jlong
+import jni.jlongArray
 import jni.jmethodID
 import jni.jobject
+import jni.jobjectArray
 import jni.jshort
+import jni.jshortArray
 import jni.jstring
 import jni.jvalue
 import kotlinx.cinterop.ExperimentalForeignApi
@@ -59,11 +68,21 @@ typealias JvmBoolean = jboolean
 typealias JvmClassHandle = jclass
 typealias JvmObjectHandle = jobject
 typealias JvmStringHandle = jstring
-typealias JvmArrayHandle = jarray
 typealias JvmValue = jvalue
 typealias JvmFieldId = jfieldID
 typealias JvmMethodId = jmethodID
 typealias JvmNativeMethod = JNINativeMethod
+
+typealias JvmArrayHandle = jarray
+typealias JvmObjectArrayHandle = jobjectArray
+typealias JvmByteArrayHandle = jbyteArray
+typealias JvmShortArrayHandle = jshortArray
+typealias JvmIntArrayHandle = jintArray
+typealias JvmLongArrayHandle = jlongArray
+typealias JvmFloatArrayHandle = jfloatArray
+typealias JvmDoubleArrayHandle = jdoubleArray
+typealias JvmBooleanArrayHandle = jbooleanArray
+typealias JvmCharArrayHandle = jcharArray
 
 fun JvmBoolean.toKBoolean(): Boolean = this == JNI_TRUE.convert<JvmBoolean>()
 fun Boolean.toJBoolean(): JvmBoolean =

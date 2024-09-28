@@ -69,27 +69,26 @@ inline fun <reified T : CPointed, reified R> JvmArrayHandle.usePinned(
     return result
 }
 
-value class JvmArray private constructor(
-    override val handle: JvmArrayHandle?
-) : JvmObject {
+interface JvmArray : JvmObject {
     companion object {
-        val NULL: JvmArray = JvmArray(null)
-
-        fun fromHandle(handle: JvmArrayHandle?): JvmArray {
-            return if (handle == null) NULL
-            else JvmArray(handle)
-        }
+        @UnsafeJniApi
+        inline fun <reified T : CVariable> JvmArray.copyPrimitiveDataFrom(
+            env: JniEnvironment,
+            from: COpaquePointer,
+            range: IntRange
+        ) = copyPrimitiveDataFrom(env, from, sizeOf<T>().toInt(), range)
 
         @UnsafeJniApi
-        fun fromUnchecked(obj: JvmObject): JvmArray = fromHandle(obj.handle)
+        inline fun <reified T : CVariable> JvmArray.copyPrimitiveDataTo(
+            env: JniEnvironment,
+            to: COpaquePointer,
+            range: IntRange
+        ) = copyPrimitiveDataTo(env, to, sizeOf<T>().toInt(), range)
     }
 
-    fun getLength(env: JniEnvironment): Int =
-        env.pointed?.GetArrayLength?.invoke(env.ptr, handle) ?: 0
+    fun getLength(env: JniEnvironment): Int
 
-    fun getComponentTypeClass(env: JniEnvironment): JvmClass = jniScoped(env) {
-        typeClass.componentTypeClass
-    }
+    fun getComponentTypeClass(env: JniEnvironment): JvmClass
 
     @UnsafeJniApi
     fun copyPrimitiveDataFrom(
@@ -97,7 +96,47 @@ value class JvmArray private constructor(
         from: COpaquePointer,
         elementSize: Int,
         range: IntRange
-    ) = jniScoped(env) {
+    )
+
+    @UnsafeJniApi
+    fun copyPrimitiveDataTo(
+        env: JniEnvironment,
+        to: COpaquePointer,
+        elementSize: Int,
+        range: IntRange
+    )
+}
+
+value class JvmGenericArray private constructor(
+    override val handle: JvmArrayHandle?
+) : JvmArray {
+    companion object {
+        val NULL: JvmGenericArray = JvmGenericArray(null)
+
+        @UnsafeJniApi
+        fun fromHandle(handle: JvmArrayHandle?): JvmGenericArray {
+            return if (handle == null) NULL
+            else JvmGenericArray(handle)
+        }
+
+        @UnsafeJniApi
+        fun fromUnchecked(obj: JvmObject): JvmGenericArray = fromHandle(obj.handle)
+    }
+
+    override fun getLength(env: JniEnvironment): Int =
+        env.pointed?.GetArrayLength?.invoke(env.ptr, handle) ?: 0
+
+    override fun getComponentTypeClass(env: JniEnvironment): JvmClass = jniScoped(env) {
+        typeClass.componentTypeClass
+    }
+
+    @UnsafeJniApi
+    override fun copyPrimitiveDataFrom(
+        env: JniEnvironment,
+        from: COpaquePointer,
+        elementSize: Int,
+        range: IntRange
+    ): Unit = jniScoped(env) {
         handle?.usePinned<COpaque, Unit> {
             memcpy(
                 interpretCPointer<COpaque>(it.rawValue + range.first.toLong()),
@@ -108,19 +147,12 @@ value class JvmArray private constructor(
     }
 
     @UnsafeJniApi
-    inline fun <reified T : CVariable> copyPrimitiveDataFrom(
-        env: JniEnvironment,
-        from: COpaquePointer,
-        range: IntRange
-    ) = copyPrimitiveDataFrom(env, from, sizeOf<T>().toInt(), range)
-
-    @UnsafeJniApi
-    fun copyPrimitiveDataTo(
+    override fun copyPrimitiveDataTo(
         env: JniEnvironment,
         to: COpaquePointer,
         elementSize: Int,
         range: IntRange
-    ) = jniScoped(env) {
+    ): Unit = jniScoped(env) {
         handle?.usePinned<COpaque, Unit> {
             memcpy(
                 to,
@@ -129,13 +161,6 @@ value class JvmArray private constructor(
             )
         }
     }
-
-    @UnsafeJniApi
-    inline fun <reified T : CVariable> copyPrimitiveDataTo(
-        env: JniEnvironment,
-        to: COpaquePointer,
-        range: IntRange
-    ) = copyPrimitiveDataTo(env, to, sizeOf<T>().toInt(), range)
 
     // Setters
 
@@ -193,7 +218,10 @@ value class JvmArray private constructor(
             Double::class -> setDouble(env, index, value as Double)
             Boolean::class -> setBoolean(env, index, value as Boolean)
             Char::class -> setChar(env, index, value as Char)
-            JvmObject::class, JvmString::class, JvmClass::class, JvmArray::class -> setObject(
+            JvmObject::class, JvmString::class, JvmClass::class, JvmArray::class, JvmGenericArray::class,
+            JvmByteArray::class, JvmShortArray::class, JvmIntArray::class, JvmLongArray::class,
+            JvmFloatArray::class, JvmDoubleArray::class, JvmBooleanArray::class, JvmCharArray::class,
+            JvmObjectArray::class -> setObject(
                 env,
                 index,
                 value as JvmObject
@@ -245,6 +273,7 @@ value class JvmArray private constructor(
         handle?.usePinned<jcharVar, Char> { Char.toChars(it[index].toInt())[0] } ?: ' '
     }
 
+    @OptIn(UnsafeJniApi::class)
     fun getObject(env: JniEnvironment, index: Int): JvmObject {
         return JvmObject.fromHandle(
             env.pointed?.GetObjectArrayElement?.invoke(
@@ -255,6 +284,7 @@ value class JvmArray private constructor(
         )
     }
 
+    @OptIn(UnsafeJniApi::class)
     @Suppress("IMPLICIT_CAST_TO_ANY")
     inline operator fun <reified R> get(env: JniEnvironment, index: Int): R = jniScoped(env) {
         when (R::class) {
@@ -267,9 +297,18 @@ value class JvmArray private constructor(
             Boolean::class -> getBoolean(env, index)
             Char::class -> getChar(env, index)
             JvmObject::class -> getObject(env, index)
-            JvmString::class -> getObject(env, index).cast<JvmString>()
-            JvmClass::class -> getObject(env, index).cast<JvmClass>()
-            JvmArray::class -> getObject(env, index).cast<JvmArray>()
+            JvmString::class -> JvmString.fromUnchecked(getObject(env, index))
+            JvmClass::class -> JvmClass.fromUnchecked(getObject(env, index))
+            JvmArray::class, JvmGenericArray::class -> fromUnchecked(getObject(env, index))
+            JvmByteArray::class -> JvmByteArray.fromUnchecked(getObject(env, index))
+            JvmShortArray::class -> JvmShortArray.fromUnchecked(getObject(env, index))
+            JvmIntArray::class -> JvmIntArray.fromUnchecked(getObject(env, index))
+            JvmLongArray::class -> JvmLongArray.fromUnchecked(getObject(env, index))
+            JvmFloatArray::class -> JvmFloatArray.fromUnchecked(getObject(env, index))
+            JvmDoubleArray::class -> JvmDoubleArray.fromUnchecked(getObject(env, index))
+            JvmBooleanArray::class -> JvmBooleanArray.fromUnchecked(getObject(env, index))
+            JvmCharArray::class -> JvmCharArray.fromUnchecked(getObject(env, index))
+            JvmObjectArray::class -> JvmObjectArray.fromUnchecked(getObject(env, index))
             else -> throw IllegalArgumentException("Unsupported array component type")
         } as R
     }
@@ -342,4 +381,365 @@ value class JvmArray private constructor(
     fun toObjectArray(env: JniEnvironment): Array<JvmObject> = jniScoped(env) {
         Array(length) { getObject(it) }
     }
+}
+
+value class JvmByteArray private constructor(
+    private val delegate: JvmGenericArray
+) : JvmArray by delegate {
+    companion object {
+        val NULL: JvmByteArray = JvmByteArray(JvmGenericArray.NULL)
+
+        @UnsafeJniApi
+        fun fromHandle(handle: JvmByteArrayHandle?): JvmByteArray {
+            return if (handle == null) NULL
+            else JvmByteArray(JvmGenericArray.fromHandle(handle))
+        }
+
+        @UnsafeJniApi
+        fun fromUnchecked(obj: JvmObject): JvmByteArray {
+            return if (obj.isNull()) NULL
+            else JvmByteArray(JvmGenericArray.fromUnchecked(obj))
+        }
+    }
+
+    override fun getComponentTypeClass(env: JniEnvironment): JvmClass = jniScoped(env) {
+        JvmClass.find(PrimitiveType.BYTE)
+    }
+
+    @UnsafeJniApi
+    fun copyDataFrom(env: JniEnvironment, from: COpaquePointer, range: IntRange) =
+        delegate.copyPrimitiveDataFrom(env, from, sizeOf<jbyteVar>().toInt(), range)
+
+    @UnsafeJniApi
+    fun copyDataTo(env: JniEnvironment, to: COpaquePointer, range: IntRange) =
+        delegate.copyPrimitiveDataTo(env, to, sizeOf<jbyteVar>().toInt(), range)
+
+    fun toArray(env: JniEnvironment): ByteArray =
+        delegate.toByteArray(env)
+
+    operator fun set(env: JniEnvironment, index: Int, value: Byte) =
+        delegate.setByte(env, index, value)
+
+    operator fun get(env: JniEnvironment, index: Int): Byte =
+        delegate.getByte(env, index)
+}
+
+value class JvmShortArray private constructor(
+    private val delegate: JvmGenericArray
+) : JvmArray by delegate {
+    companion object {
+        val NULL: JvmShortArray = JvmShortArray(JvmGenericArray.NULL)
+
+        @UnsafeJniApi
+        fun fromHandle(handle: JvmShortArrayHandle?): JvmShortArray {
+            return if (handle == null) NULL
+            else JvmShortArray(JvmGenericArray.fromHandle(handle))
+        }
+
+        @UnsafeJniApi
+        fun fromUnchecked(obj: JvmObject): JvmShortArray {
+            return if (obj.isNull()) NULL
+            else JvmShortArray(JvmGenericArray.fromUnchecked(obj))
+        }
+    }
+
+    override fun getComponentTypeClass(env: JniEnvironment): JvmClass = jniScoped(env) {
+        JvmClass.find(PrimitiveType.SHORT)
+    }
+
+    @UnsafeJniApi
+    fun copyDataFrom(env: JniEnvironment, from: COpaquePointer, range: IntRange) =
+        delegate.copyPrimitiveDataFrom(env, from, sizeOf<jshortVar>().toInt(), range)
+
+    @UnsafeJniApi
+    fun copyDataTo(env: JniEnvironment, to: COpaquePointer, range: IntRange) =
+        delegate.copyPrimitiveDataTo(env, to, sizeOf<jshortVar>().toInt(), range)
+
+    fun toArray(env: JniEnvironment): ShortArray =
+        delegate.toShortArray(env)
+
+    operator fun set(env: JniEnvironment, index: Int, value: Short) =
+        delegate.setShort(env, index, value)
+
+    operator fun get(env: JniEnvironment, index: Int): Short =
+        delegate.getShort(env, index)
+}
+
+value class JvmIntArray private constructor(
+    private val delegate: JvmGenericArray
+) : JvmArray by delegate {
+    companion object {
+        val NULL: JvmIntArray = JvmIntArray(JvmGenericArray.NULL)
+
+        @UnsafeJniApi
+        fun fromHandle(handle: JvmIntArrayHandle?): JvmIntArray {
+            return if (handle == null) NULL
+            else JvmIntArray(JvmGenericArray.fromHandle(handle))
+        }
+
+        @UnsafeJniApi
+        fun fromUnchecked(obj: JvmObject): JvmIntArray {
+            return if (obj.isNull()) NULL
+            else JvmIntArray(JvmGenericArray.fromUnchecked(obj))
+        }
+    }
+
+    override fun getComponentTypeClass(env: JniEnvironment): JvmClass = jniScoped(env) {
+        JvmClass.find(PrimitiveType.INT)
+    }
+
+    @UnsafeJniApi
+    fun copyDataFrom(env: JniEnvironment, from: COpaquePointer, range: IntRange) =
+        delegate.copyPrimitiveDataFrom(env, from, sizeOf<jintVar>().toInt(), range)
+
+    @UnsafeJniApi
+    fun copyDataTo(env: JniEnvironment, to: COpaquePointer, range: IntRange) =
+        delegate.copyPrimitiveDataTo(env, to, sizeOf<jintVar>().toInt(), range)
+
+    fun toArray(env: JniEnvironment): IntArray =
+        delegate.toIntArray(env)
+
+    operator fun set(env: JniEnvironment, index: Int, value: Int) =
+        delegate.setInt(env, index, value)
+
+    operator fun get(env: JniEnvironment, index: Int): Int =
+        delegate.getInt(env, index)
+}
+
+value class JvmLongArray private constructor(
+    private val delegate: JvmGenericArray
+) : JvmArray by delegate {
+    companion object {
+        val NULL: JvmLongArray = JvmLongArray(JvmGenericArray.NULL)
+
+        @UnsafeJniApi
+        fun fromHandle(handle: JvmLongArrayHandle?): JvmLongArray {
+            return if (handle == null) NULL
+            else JvmLongArray(JvmGenericArray.fromHandle(handle))
+        }
+
+        @UnsafeJniApi
+        fun fromUnchecked(obj: JvmObject): JvmLongArray {
+            return if (obj.isNull()) NULL
+            else JvmLongArray(JvmGenericArray.fromUnchecked(obj))
+        }
+    }
+
+    override fun getComponentTypeClass(env: JniEnvironment): JvmClass = jniScoped(env) {
+        JvmClass.find(PrimitiveType.LONG)
+    }
+
+    @UnsafeJniApi
+    fun copyDataFrom(env: JniEnvironment, from: COpaquePointer, range: IntRange) =
+        delegate.copyPrimitiveDataFrom(env, from, sizeOf<jlongVar>().toInt(), range)
+
+    @UnsafeJniApi
+    fun copyDataTo(env: JniEnvironment, to: COpaquePointer, range: IntRange) =
+        delegate.copyPrimitiveDataTo(env, to, sizeOf<jlongVar>().toInt(), range)
+
+    fun toArray(env: JniEnvironment): LongArray =
+        delegate.toLongArray(env)
+
+    operator fun set(env: JniEnvironment, index: Int, value: Long) =
+        delegate.setLong(env, index, value)
+
+    operator fun get(env: JniEnvironment, index: Int): Long =
+        delegate.getLong(env, index)
+}
+
+value class JvmFloatArray private constructor(
+    private val delegate: JvmGenericArray
+) : JvmArray by delegate {
+    companion object {
+        val NULL: JvmFloatArray = JvmFloatArray(JvmGenericArray.NULL)
+
+        @UnsafeJniApi
+        fun fromHandle(handle: JvmFloatArrayHandle?): JvmFloatArray {
+            return if (handle == null) NULL
+            else JvmFloatArray(JvmGenericArray.fromHandle(handle))
+        }
+
+        @UnsafeJniApi
+        fun fromUnchecked(obj: JvmObject): JvmFloatArray {
+            return if (obj.isNull()) NULL
+            else JvmFloatArray(JvmGenericArray.fromUnchecked(obj))
+        }
+    }
+
+    override fun getComponentTypeClass(env: JniEnvironment): JvmClass = jniScoped(env) {
+        JvmClass.find(PrimitiveType.FLOAT)
+    }
+
+    @UnsafeJniApi
+    fun copyDataFrom(env: JniEnvironment, from: COpaquePointer, range: IntRange) =
+        delegate.copyPrimitiveDataFrom(env, from, sizeOf<jfloatVar>().toInt(), range)
+
+    @UnsafeJniApi
+    fun copyDataTo(env: JniEnvironment, to: COpaquePointer, range: IntRange) =
+        delegate.copyPrimitiveDataTo(env, to, sizeOf<jfloatVar>().toInt(), range)
+
+    fun toArray(env: JniEnvironment): FloatArray =
+        delegate.toFloatArray(env)
+
+    operator fun set(env: JniEnvironment, index: Int, value: Float) =
+        delegate.setFloat(env, index, value)
+
+    operator fun get(env: JniEnvironment, index: Int): Float =
+        delegate.getFloat(env, index)
+}
+
+value class JvmDoubleArray private constructor(
+    private val delegate: JvmGenericArray
+) : JvmArray by delegate {
+    companion object {
+        val NULL: JvmDoubleArray = JvmDoubleArray(JvmGenericArray.NULL)
+
+        @UnsafeJniApi
+        fun fromHandle(handle: JvmDoubleArrayHandle?): JvmDoubleArray {
+            return if (handle == null) NULL
+            else JvmDoubleArray(JvmGenericArray.fromHandle(handle))
+        }
+
+        @UnsafeJniApi
+        fun fromUnchecked(obj: JvmObject): JvmDoubleArray {
+            return if (obj.isNull()) NULL
+            else JvmDoubleArray(JvmGenericArray.fromUnchecked(obj))
+        }
+    }
+
+    override fun getComponentTypeClass(env: JniEnvironment): JvmClass = jniScoped(env) {
+        JvmClass.find(PrimitiveType.DOUBLE)
+    }
+
+    @UnsafeJniApi
+    fun copyDataFrom(env: JniEnvironment, from: COpaquePointer, range: IntRange) =
+        delegate.copyPrimitiveDataFrom(env, from, sizeOf<jdoubleVar>().toInt(), range)
+
+    @UnsafeJniApi
+    fun copyDataTo(env: JniEnvironment, to: COpaquePointer, range: IntRange) =
+        delegate.copyPrimitiveDataTo(env, to, sizeOf<jdoubleVar>().toInt(), range)
+
+    fun toArray(env: JniEnvironment): DoubleArray =
+        delegate.toDoubleArray(env)
+
+    operator fun set(env: JniEnvironment, index: Int, value: Double) =
+        delegate.setDouble(env, index, value)
+
+    operator fun get(env: JniEnvironment, index: Int): Double =
+        delegate.getDouble(env, index)
+}
+
+value class JvmBooleanArray private constructor(
+    private val delegate: JvmGenericArray
+) : JvmArray by delegate {
+    companion object {
+        val NULL: JvmBooleanArray = JvmBooleanArray(JvmGenericArray.NULL)
+
+        @UnsafeJniApi
+        fun fromHandle(handle: JvmBooleanArrayHandle?): JvmBooleanArray {
+            return if (handle == null) NULL
+            else JvmBooleanArray(JvmGenericArray.fromHandle(handle))
+        }
+
+        @UnsafeJniApi
+        fun fromUnchecked(obj: JvmObject): JvmBooleanArray {
+            return if (obj.isNull()) NULL
+            else JvmBooleanArray(JvmGenericArray.fromUnchecked(obj))
+        }
+    }
+
+    override fun getComponentTypeClass(env: JniEnvironment): JvmClass = jniScoped(env) {
+        JvmClass.find(PrimitiveType.BOOLEAN)
+    }
+
+    @UnsafeJniApi
+    fun copyDataFrom(env: JniEnvironment, from: COpaquePointer, range: IntRange) =
+        delegate.copyPrimitiveDataFrom(env, from, sizeOf<jbooleanVar>().toInt(), range)
+
+    @UnsafeJniApi
+    fun copyDataTo(env: JniEnvironment, to: COpaquePointer, range: IntRange) =
+        delegate.copyPrimitiveDataTo(env, to, sizeOf<jbooleanVar>().toInt(), range)
+
+    fun toArray(env: JniEnvironment): BooleanArray =
+        delegate.toBooleanArray(env)
+
+    operator fun set(env: JniEnvironment, index: Int, value: Boolean) =
+        delegate.setBoolean(env, index, value)
+
+    operator fun get(env: JniEnvironment, index: Int): Boolean =
+        delegate.getBoolean(env, index)
+}
+
+value class JvmCharArray private constructor(
+    private val delegate: JvmGenericArray
+) : JvmArray by delegate {
+    companion object {
+        val NULL: JvmCharArray = JvmCharArray(JvmGenericArray.NULL)
+
+        @UnsafeJniApi
+        fun fromHandle(handle: JvmCharArrayHandle?): JvmCharArray {
+            return if (handle == null) NULL
+            else JvmCharArray(JvmGenericArray.fromHandle(handle))
+        }
+
+        @UnsafeJniApi
+        fun fromUnchecked(obj: JvmObject): JvmCharArray {
+            return if (obj.isNull()) NULL
+            else JvmCharArray(JvmGenericArray.fromUnchecked(obj))
+        }
+    }
+
+    override fun getComponentTypeClass(env: JniEnvironment): JvmClass = jniScoped(env) {
+        JvmClass.find(PrimitiveType.CHAR)
+    }
+
+    @UnsafeJniApi
+    fun copyDataFrom(env: JniEnvironment, from: COpaquePointer, range: IntRange) =
+        delegate.copyPrimitiveDataFrom(env, from, sizeOf<jcharVar>().toInt(), range)
+
+    @UnsafeJniApi
+    fun copyDataTo(env: JniEnvironment, to: COpaquePointer, range: IntRange) =
+        delegate.copyPrimitiveDataTo(env, to, sizeOf<jcharVar>().toInt(), range)
+
+    fun toArray(env: JniEnvironment): CharArray =
+        delegate.toCharArray(env)
+
+    operator fun set(env: JniEnvironment, index: Int, value: Char) =
+        delegate.setChar(env, index, value)
+
+    operator fun get(env: JniEnvironment, index: Int): Char =
+        delegate.getChar(env, index)
+}
+
+value class JvmObjectArray private constructor(
+    private val delegate: JvmGenericArray
+) : JvmArray by delegate {
+    companion object {
+        val NULL: JvmObjectArray = JvmObjectArray(JvmGenericArray.NULL)
+
+        @UnsafeJniApi
+        fun fromHandle(handle: JvmObjectArrayHandle?): JvmObjectArray {
+            return if (handle == null) NULL
+            else JvmObjectArray(JvmGenericArray.fromHandle(handle))
+        }
+
+        @UnsafeJniApi
+        fun fromUnchecked(obj: JvmObject): JvmObjectArray {
+            return if (obj.isNull()) NULL
+            else JvmObjectArray(JvmGenericArray.fromUnchecked(obj))
+        }
+    }
+
+    override fun getComponentTypeClass(env: JniEnvironment): JvmClass = jniScoped(env) {
+        JvmClass.find(Type.OBJECT)
+    }
+
+    fun toArray(env: JniEnvironment): Array<JvmObject> =
+        delegate.toObjectArray(env)
+
+    operator fun set(env: JniEnvironment, index: Int, value: JvmObject) =
+        delegate.setObject(env, index, value)
+
+    operator fun get(env: JniEnvironment, index: Int): JvmObject =
+        delegate.getObject(env, index)
 }

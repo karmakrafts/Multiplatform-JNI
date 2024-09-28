@@ -80,6 +80,7 @@ sealed class PrimitiveType private constructor(
     object FLOAT : PrimitiveType(Float::class, Float.SIZE_BYTES, "java.lang.Float", "F")
     object DOUBLE : PrimitiveType(Double::class, Double.SIZE_BYTES, "java.lang.Double", "D")
     object BOOLEAN : PrimitiveType(Boolean::class, Byte.SIZE_BYTES, "java.lang.Boolean", "Z")
+    object CHAR : PrimitiveType(Char::class, Char.SIZE_BYTES, "java.lang.Character", "C")
 
     override fun equals(other: Any?): Boolean = other === this
     override fun hashCode(): Int = type.hashCode()
