@@ -1,6 +1,4 @@
 [versions]
-multiplatformJni = "1.2.0"
-
 agp = "8.4.2"
 kotlin = "2.0.10"
 kotlinxCoroutines = "1.9.0"

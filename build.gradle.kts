@@ -17,6 +17,7 @@
 import java.util.Properties
 import kotlin.io.path.div
 import kotlin.io.path.inputStream
+import kotlin.io.path.readText
 
 plugins {
     alias(libs.plugins.kotlin.multiplatform) apply false
@@ -29,9 +30,11 @@ val buildConfig: Properties = Properties().apply {
     }
 }
 
+val baseVersion: String = (rootDir.toPath() / ".version").readText()
+
 allprojects {
     group = buildConfig["group"] as String
-    version = "${rootProject.libs.versions.multiplatformJni.get()}.${System.getenv("CI_PIPELINE_IID") ?: 0}"
+    version = "$baseVersion.${System.getenv("CI_PIPELINE_IID") ?: 0}"
 
     repositories {
         mavenLocal()
