@@ -32,18 +32,12 @@ java {
 }
 
 val jniFiles = projectDir.toPath() / "jni"
-val dlfcnFiles = projectDir.toPath() / "dlfcn"
 
 kotlin {
     jvm()
     mingwX64 {
         val jniHome = jniFiles / "windows-x64"
-        val dlfcnHome = dlfcnFiles / "windows-x64"
         compilations["main"].cinterops {
-            val dlfcn by creating {
-                compilerOpts("-I${dlfcnHome / "include"}")
-                headers("${dlfcnHome / "include" / "dlfcn.h"}")
-            }
             val jni by creating {
                 compilerOpts("-I${jniHome / "include"}", "-I${jniHome / "include" / "win32"}")
                 headers("${jniHome / "include" / "jni.h"}")
@@ -53,11 +47,8 @@ kotlin {
             sharedLib {
                 linkerOpts(
                     "-L${jniHome / "lib"}",
-                    "-L${dlfcnHome / "lib"}",
                     "-ljawt",
-                    "-ljvm",
-                    "-lssp",
-                    "-ldl"
+                    "-ljvm"
                 )
             }
         }
@@ -69,21 +60,11 @@ kotlin {
             else -> throw IllegalStateException("Unsupported target platform")
         }
         val jniHome = jniFiles / platformPair
-        val dlfcnHome = dlfcnFiles / platformPair
         target.apply {
             compilations["main"].cinterops {
-                val dlfcn by creating {
-                    compilerOpts("-I${dlfcnHome / "include"}")
-                    headers("${dlfcnHome / "include" / "dlfcn.h"}")
-                }
                 val jni by creating {
                     compilerOpts("-I${jniHome / "include"}", "-I${jniHome / "include" / "linux"}")
                     headers("${jniHome / "include" / "jni.h"}")
-                }
-            }
-            binaries {
-                sharedLib {
-                    linkerOpts("-L/usr/lib", "-ldl")
                 }
             }
         }
@@ -95,13 +76,8 @@ kotlin {
             else -> throw IllegalStateException("Unsupported target platform")
         }
         val jniHome = jniFiles / platformPair
-        val dlfcnHome = dlfcnFiles / platformPair
         target.apply {
             compilations["main"].cinterops {
-                val dlfcn by creating {
-                    compilerOpts("-I${dlfcnHome / "include"}")
-                    headers("${dlfcnHome / "include" / "dlfcn.h"}")
-                }
                 val jni by creating {
                     compilerOpts("-I${jniHome / "include"}", "-I${jniHome / "include" / "darwin"}")
                     headers("${jniHome / "include" / "jni.h"}")
@@ -110,12 +86,6 @@ kotlin {
             binaries {
                 framework {
                     baseName = "MultiplatformJNI"
-                }
-                sharedLib {
-                    linkerOpts(
-                        "-L/Library/Developer/CommandLineTools/SDKs/MacOSX.sdk/usr/lib",
-                        "-ldl"
-                    )
                 }
             }
         }
