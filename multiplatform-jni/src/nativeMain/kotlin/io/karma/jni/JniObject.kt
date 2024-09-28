@@ -27,7 +27,10 @@ interface JvmObject {
     companion object {
         val NULL: JvmObjectRef = object : JvmObjectRef {
             override val handle: JvmObjectHandle? = null
-            override fun delete(env: JniEnvironment) {}
+
+            @UnsafeJniApi
+            override fun delete(env: JniEnvironment) {
+            }
         }
 
         fun fromHandle(handle: JvmObjectHandle?): JvmObject {
@@ -51,16 +54,19 @@ interface JvmObject {
 
     fun isNull(): Boolean = handle == null
 
+    @UnsafeJniApi
     fun createGlobalRef(env: JniEnvironment): JvmObjectRef {
         return if (handle == null) NULL
         else JvmGlobalRef(env.pointed?.NewGlobalRef?.invoke(env.ptr, handle))
     }
 
+    @UnsafeJniApi
     fun createLocalRef(env: JniEnvironment): JvmObjectRef {
         return if (handle == null) NULL
         else JvmLocalRef(env.pointed?.NewLocalRef?.invoke(env.ptr, handle))
     }
 
+    @UnsafeJniApi
     fun createWeakRef(env: JniEnvironment): JvmObjectRef {
         return if (handle == null) NULL
         else JvmWeakRef(env.pointed?.NewWeakGlobalRef?.invoke(env.ptr, handle))
@@ -115,13 +121,17 @@ internal value class SimpleJvmObject(
 ) : JvmObject
 
 interface JvmObjectRef : JvmObject {
+    @UnsafeJniApi
     fun delete(env: JniEnvironment)
 }
 
 internal value class JvmGlobalRef(
     override val handle: JvmObjectHandle?
 ) : JvmObjectRef {
+    @UnsafeJniApi
     override fun createGlobalRef(env: JniEnvironment): JvmObjectRef = this
+
+    @UnsafeJniApi
     override fun delete(env: JniEnvironment) {
         env.pointed?.DeleteGlobalRef?.invoke(env.ptr, handle)
     }
@@ -130,7 +140,10 @@ internal value class JvmGlobalRef(
 internal value class JvmLocalRef(
     override val handle: JvmObjectHandle?
 ) : JvmObjectRef {
+    @UnsafeJniApi
     override fun createLocalRef(env: JniEnvironment): JvmObjectRef = this
+
+    @UnsafeJniApi
     override fun delete(env: JniEnvironment) {
         env.pointed?.DeleteLocalRef?.invoke(env.ptr, handle)
     }
@@ -139,7 +152,10 @@ internal value class JvmLocalRef(
 internal value class JvmWeakRef(
     override val handle: JvmObjectHandle?
 ) : JvmObjectRef {
+    @UnsafeJniApi
     override fun createWeakRef(env: JniEnvironment): JvmObjectRef = this
+
+    @UnsafeJniApi
     override fun delete(env: JniEnvironment) {
         env.pointed?.DeleteWeakGlobalRef?.invoke(env.ptr, handle)
     }

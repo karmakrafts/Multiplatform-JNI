@@ -161,15 +161,23 @@ value class JniScope(val env: JniEnvironment) {
     val JvmObject.typeClass: JvmClass
         get() = getTypeClass(env)
 
+    @UnsafeJniApi
     fun JvmObject.createGlobalRef(): JvmObjectRef = createGlobalRef(env)
+
+    @UnsafeJniApi
     fun JvmObject.createLocalRef(): JvmObjectRef = createLocalRef(env)
+
+    @UnsafeJniApi
     fun JvmObject.createWeakRef(): JvmObjectRef = createWeakRef(env)
+
+    @UnsafeJniApi
+    fun JvmObjectRef.delete() = delete(env)
+
     fun JvmObject.cast(type: Type): JvmObject = cast(env, type)
     fun JvmObject.cast(clazz: JvmClass): JvmObject = cast(env, clazz)
     fun JvmObject.isInstance(type: Type): Boolean = isInstance(env, type)
     fun JvmObject.isInstance(clazz: JvmClass): Boolean = isInstance(env, clazz)
     fun JvmObject.toKString(): String = toKString(env)
-    fun JvmObjectRef.delete() = delete(env)
 
     inline fun <reified T : JvmObject> JvmObject.cast(): T = cast<T>(env)
 
