@@ -26,7 +26,7 @@
 #ifndef _JAVASOFT_JAWT_MD_H_
 #define _JAVASOFT_JAWT_MD_H_
 
-#include "jawt.h"
+#include "../../../macos-arm64/include/jawt.h"
 
 #ifdef __OBJC__
 #import <QuartzCore/CALayer.h>

@@ -34,9 +34,15 @@ java {
 val jniFiles = projectDir.toPath() / "jni"
 
 kotlin {
+    jvm()
     mingwX64 {
         val jniHome = jniFiles / "windows-x64"
+        val dlfcnHome = projectDir.toPath() / "mingw-dlfcn"
         compilations["main"].cinterops {
+            val dlfcn by creating {
+                compilerOpts("-I${dlfcnHome / "include"}")
+                headers("${dlfcnHome / "include" / "dlfcn.h"}")
+            }
             val jni by creating {
                 compilerOpts("-I${jniHome / "include"}", "-I${jniHome / "include" / "win32"}")
                 headers("${jniHome / "include" / "jni.h"}")
@@ -46,8 +52,11 @@ kotlin {
             sharedLib {
                 linkerOpts(
                     "-L${jniHome / "lib"}",
+                    "-L${dlfcnHome / "lib"}",
                     "-ljawt",
-                    "-ljvm"
+                    "-ljvm",
+                    "-lssp",
+                    "-ldl"
                 )
             }
         }
@@ -61,9 +70,18 @@ kotlin {
         val jniHome = jniFiles / platformPair
         target.apply {
             compilations["main"].cinterops {
+                val dlfcn by creating {
+                    compilerOpts("-I/usr/include")
+                    headers("/usr/include/dlfcn.h")
+                }
                 val jni by creating {
                     compilerOpts("-I${jniHome / "include"}", "-I${jniHome / "include" / "linux"}")
                     headers("${jniHome / "include" / "jni.h"}")
+                }
+            }
+            binaries {
+                sharedLib {
+                    linkerOpts("-L/usr/lib", "-ldl")
                 }
             }
         }
@@ -77,6 +95,10 @@ kotlin {
         val jniHome = jniFiles / platformPair
         target.apply {
             compilations["main"].cinterops {
+                val dlfcn by creating {
+                    compilerOpts("-I/usr/include")
+                    headers("/usr/include/dlfcn.h")
+                }
                 val jni by creating {
                     compilerOpts("-I${jniHome / "include"}", "-I${jniHome / "include" / "darwin"}")
                     headers("${jniHome / "include" / "jni.h"}")
@@ -86,9 +108,13 @@ kotlin {
                 framework {
                     baseName = "MultiplatformJNI"
                 }
+                sharedLib {
+                    linkerOpts("-L/usr/lib", "-ldl")
+                }
             }
         }
     }
+    applyDefaultHierarchyTemplate()
     sourceSets {
         commonMain {
             dependencies {

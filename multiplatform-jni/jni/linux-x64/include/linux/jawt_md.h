@@ -29,7 +29,7 @@
 #include <X11/Xlib.h>
 #include <X11/Xutil.h>
 #include <X11/Intrinsic.h>
-#include "jawt.h"
+#include "../../../macos-arm64/include/jawt.h"
 
 #ifdef __cplusplus
 extern "C" {
