@@ -333,6 +333,15 @@ value class JvmArray private constructor(
         }
     }
 
+    fun toBooleanArray(env: JniEnvironment): BooleanArray = jniScoped(env) {
+        BooleanArray(length) { getBoolean(it) }
+    }
+
+    @OptIn(ExperimentalNativeApi::class)
+    fun toCharArray(env: JniEnvironment): CharArray = jniScoped(env) {
+        CharArray(length) { Char.toChars(getShort(it).toInt())[0] }
+    }
+
     fun toObjectArray(env: JniEnvironment): Array<JvmObject> = jniScoped(env) {
         Array(length) { getObject(it) }
     }

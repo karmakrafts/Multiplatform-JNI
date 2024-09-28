@@ -190,15 +190,13 @@ value class JniScope(val env: JniEnvironment) {
     inline fun <reified T : CVariable> JvmArray.copyPrimitiveDataFrom(
         from: COpaquePointer,
         range: IntRange
-    ) =
-        copyPrimitiveDataFrom<T>(env, from, range)
+    ) = copyPrimitiveDataFrom<T>(env, from, range)
 
     @UnsafeJniApi
     inline fun <reified T : CVariable> JvmArray.copyPrimitiveDataTo(
         to: COpaquePointer,
         range: IntRange
-    ) =
-        copyPrimitiveDataTo<T>(env, to, range)
+    ) = copyPrimitiveDataTo<T>(env, to, range)
 
     fun JvmArray.setByte(index: Int, value: Byte) = setByte(env, index, value)
     fun JvmArray.setShort(index: Int, value: Short) = setShort(env, index, value)
@@ -230,6 +228,8 @@ value class JniScope(val env: JniEnvironment) {
     fun JvmArray.toLongArray(): LongArray = toLongArray(env)
     fun JvmArray.toFloatArray(): FloatArray = toFloatArray(env)
     fun JvmArray.toDoubleArray(): DoubleArray = toDoubleArray(env)
+    fun JvmArray.toBooleanArray(): BooleanArray = toBooleanArray(env)
+    fun JvmArray.toCharArray(): CharArray = toCharArray(env)
     fun JvmArray.toObjectArray(): Array<JvmObject> = toObjectArray(env)
 
     val JvmArray.componentTypeClass: JvmClass
