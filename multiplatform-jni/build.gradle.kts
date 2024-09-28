@@ -127,14 +127,7 @@ publishing {
     System.getenv("CI_API_V4_URL")?.let { apiUrl ->
         repositories {
             maven {
-                url = uri(
-                    "${
-                        apiUrl.replace(
-                            "http://",
-                            "https://"
-                        )
-                    }/projects/${System.getenv("CI_PROJECT_ID")}/packages/maven"
-                )
+                url = uri("$apiUrl/projects/${System.getenv("CI_PROJECT_ID")}/packages/maven")
                 name = "GitLab"
                 credentials(HttpHeaderCredentials::class) {
                     name = "Job-Token"
@@ -153,7 +146,7 @@ publishing {
                 name = project.name
                 description =
                     "Multiplatform bindings for the native JNI API on Linux, Windows and macOS."
-                url = "https://git.karmakrafts.dev/kk/multiplatform-jni"
+                url = System.getenv("CI_PROJECT_URL")
                 licenses {
                     license {
                         name = "Apache License 2.0"
@@ -168,7 +161,7 @@ publishing {
                     }
                 }
                 scm {
-                    url = "https://git.karmakrafts.dev/kk/multiplatform-jni"
+                    url = this@pom.url
                 }
             }
         }
