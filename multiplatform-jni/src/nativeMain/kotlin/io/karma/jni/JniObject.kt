@@ -69,13 +69,14 @@ interface JvmObject {
     fun getTypeClass(env: JniEnvironment): JvmClass =
         JvmClass.fromHandle(env.pointed?.GetObjectClass?.invoke(env.ptr, handle))
 
-    fun cast(env: JniEnvironment, type: Type): JvmObject {
-        return JvmClass.find(env, type).let {
-            it.findMethod(env) {
+    fun cast(env: JniEnvironment, type: Type): JvmObject = jniScoped(env) {
+        return JvmClass.find(type).let {
+            it.findMethod {
                 name = "cast"
                 returnType = Type.OBJECT
                 parameterTypes += Type.OBJECT
-            }.callObject(env, it) {
+                callType = CallType.DIRECT
+            }.callObject(it) {
                 put(this@JvmObject)
             }
         }
@@ -83,13 +84,14 @@ interface JvmObject {
 
     fun cast(env: JniEnvironment, clazz: JvmClass): JvmObject = cast(env, clazz.getType(env))
 
-    fun isInstance(env: JniEnvironment, type: Type): Boolean {
-        return JvmClass.find(env, type).let {
-            it.findMethod(env) {
+    fun isInstance(env: JniEnvironment, type: Type): Boolean = jniScoped(env) {
+        return JvmClass.find(type).let {
+            it.findMethod {
                 name = "isInstance"
                 returnType = PrimitiveType.BOOLEAN
                 parameterTypes += Type.OBJECT
-            }.callBoolean(env, it) {
+                callType = CallType.DIRECT
+            }.callBoolean(it) {
                 put(this@JvmObject)
             }
         }

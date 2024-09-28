@@ -156,7 +156,7 @@ class ArgumentScope(
     }
 
     fun put(value: JvmObject) {
-        require(descriptor.parameterTypes[index] !is PrimitiveType) { "Parameter type mismatch" }
+        require(descriptor.parameterTypes[index].typeClass == TypeClass.PRIMITIVE) { "Parameter type mismatch" }
         interpretCPointer<JvmValue>(address.rawPtr + index * sizeOf<JvmValue>())?.pointed?.l =
             value.handle
         index++
