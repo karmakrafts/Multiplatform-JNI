@@ -20,6 +20,7 @@ package io.karma.jni
 
 import io.karma.jni.JvmArray.Companion.copyPrimitiveDataFrom
 import io.karma.jni.JvmArray.Companion.copyPrimitiveDataTo
+import io.karma.jni.JvmArray.Companion.usePinned
 import jni.jstring
 import kotlinx.cinterop.COpaquePointer
 import kotlinx.cinterop.CPointed
@@ -188,10 +189,14 @@ value class JniScope(val env: JniEnvironment) {
         get() = getLength(env)
 
     @UnsafeJniApi
-    inline fun <reified T : CPointed> JvmArrayHandle.pin(): CPointer<T> = pin(env)
+    fun JvmArrayHandle.pin(): COpaquePointer = pin(env)
 
     @UnsafeJniApi
     fun JvmArrayHandle.unpin(address: COpaquePointer) = unpin(env, address)
+
+    @UnsafeJniApi
+    inline fun <reified R> JvmArrayHandle.usePinned(closure: (COpaquePointer) -> R): R =
+        usePinned<R>(env, closure)
 
     @UnsafeJniApi
     inline fun <reified T : CPointed, reified R> JvmArrayHandle.usePinned(closure: (CPointer<T>) -> R): R =
@@ -203,6 +208,20 @@ value class JniScope(val env: JniEnvironment) {
         get() = getLength(env)
     val JvmArray.indices: IntRange
         get() = 0..<getLength(env)
+
+    @UnsafeJniApi
+    fun JvmArray.pin(): COpaquePointer = pin(env)
+
+    @UnsafeJniApi
+    fun JvmArray.unpin(address: COpaquePointer) = unpin(env, address)
+
+    @UnsafeJniApi
+    inline fun <reified R> JvmArray.usePinned(closure: (COpaquePointer) -> R): R =
+        usePinned<R>(env, closure)
+
+    @UnsafeJniApi
+    inline fun <reified T : CPointed, reified R> JvmArray.usePinned(closure: (CPointer<T>) -> R): R =
+        usePinned<T, R>(env, closure)
 
     @UnsafeJniApi
     fun JvmArray.copyPrimitiveDataFrom(from: COpaquePointer, elementSize: Int, range: IntRange) =

@@ -47,10 +47,10 @@ import platform.posix.memcpy
 import kotlin.experimental.ExperimentalNativeApi
 
 @UnsafeJniApi
-inline fun <reified T : CPointed> JvmArrayHandle.pin(env: JniEnvironment): CPointer<T> {
+fun JvmArrayHandle.pin(env: JniEnvironment): COpaquePointer {
     return requireNotNull(env.pointed?.GetPrimitiveArrayCritical?.invoke(env.ptr, this, null)) {
         "Could not obtained address of pinned JVM array"
-    }.reinterpret()
+    }
 }
 
 @UnsafeJniApi
@@ -59,12 +59,23 @@ fun JvmArrayHandle.unpin(env: JniEnvironment, address: COpaquePointer) {
 }
 
 @UnsafeJniApi
+inline fun <reified R> JvmArrayHandle.usePinned(
+    env: JniEnvironment,
+    closure: (COpaquePointer) -> R
+): R {
+    val address = pin(env)
+    val result = closure(address)
+    unpin(env, address)
+    return result
+}
+
+@UnsafeJniApi
 inline fun <reified T : CPointed, reified R> JvmArrayHandle.usePinned(
     env: JniEnvironment,
     closure: (CPointer<T>) -> R
 ): R {
-    val address = pin<T>(env)
-    val result = closure(address)
+    val address = pin(env)
+    val result = closure(address.reinterpret())
     unpin(env, address)
     return result
 }
@@ -84,11 +95,39 @@ interface JvmArray : JvmObject {
             to: COpaquePointer,
             range: IntRange
         ) = copyPrimitiveDataTo(env, to, sizeOf<T>().toInt(), range)
+
+        @UnsafeJniApi
+        inline fun <reified R> JvmArray.usePinned(
+            env: JniEnvironment,
+            closure: (COpaquePointer) -> R
+        ): R {
+            val address = pin(env)
+            val result = closure(address)
+            unpin(env, address)
+            return result
+        }
+
+        @UnsafeJniApi
+        inline fun <reified T : CPointed, reified R> JvmArray.usePinned(
+            env: JniEnvironment,
+            closure: (CPointer<T>) -> R
+        ): R {
+            val address = pin(env)
+            val result = closure(address.reinterpret())
+            unpin(env, address)
+            return result
+        }
     }
 
     fun getLength(env: JniEnvironment): Int
 
     fun getComponentTypeClass(env: JniEnvironment): JvmClass
+
+    @UnsafeJniApi
+    fun pin(env: JniEnvironment): COpaquePointer
+
+    @UnsafeJniApi
+    fun unpin(env: JniEnvironment, address: COpaquePointer)
 
     @UnsafeJniApi
     fun copyPrimitiveDataFrom(
@@ -131,13 +170,23 @@ value class JvmGenericArray private constructor(
     }
 
     @UnsafeJniApi
+    override fun pin(env: JniEnvironment): COpaquePointer {
+        return requireNotNull(handle?.pin(env)) { "Could not pin array object" }
+    }
+
+    @UnsafeJniApi
+    override fun unpin(env: JniEnvironment, address: COpaquePointer) {
+        handle?.unpin(env, address)
+    }
+
+    @UnsafeJniApi
     override fun copyPrimitiveDataFrom(
         env: JniEnvironment,
         from: COpaquePointer,
         elementSize: Int,
         range: IntRange
     ): Unit = jniScoped(env) {
-        handle?.usePinned<COpaque, Unit> {
+        handle?.usePinned {
             memcpy(
                 interpretCPointer<COpaque>(it.rawValue + range.first.toLong()),
                 from,
@@ -153,7 +202,7 @@ value class JvmGenericArray private constructor(
         elementSize: Int,
         range: IntRange
     ): Unit = jniScoped(env) {
-        handle?.usePinned<COpaque, Unit> {
+        handle?.usePinned {
             memcpy(
                 to,
                 interpretCPointer<COpaque>(it.rawValue + range.first.toLong()),
