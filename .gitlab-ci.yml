@@ -47,18 +47,17 @@ build-macos:
 
 create-release:
   stage: release
-  before_script:
-    - export PROJECT_VERSION=$(cat .version)
   image: registry.gitlab.com/gitlab-org/release-cli:latest
   rules:
     - if: $CI_COMMIT_TAG
-      when: never
+      when: never                                  
     - if: $CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH
+  script:
+    - export PROJECT_VERSION=$(cat .version)
+    - echo "Creating release for $TAG"
   release:
     tag_name: '$PROJECT_VERSION.$CI_PIPELINE_IID'
     description: '$PROJECT_VERSION.$CI_PIPELINE_IID'
     ref: '$CI_COMMIT_SHA'
-  only:
-    - master
   tags:
     - linux
