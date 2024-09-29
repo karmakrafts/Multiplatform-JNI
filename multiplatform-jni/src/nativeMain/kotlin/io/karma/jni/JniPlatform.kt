@@ -43,15 +43,6 @@ import kotlin.concurrent.AtomicReference
 import kotlin.experimental.ExperimentalNativeApi
 import kotlin.native.internal.NativePtr
 
-value class VirtualMachine private constructor(
-    @property:UnsafeJniApi val handle: VmHandle
-) {
-    companion object {
-        @UnsafeJniApi
-        fun fromHandle(handle: VmHandle): VirtualMachine = VirtualMachine(handle)
-    }
-}
-
 object JniPlatform {
     private val vmAddress: AtomicNativePtr = AtomicNativePtr(NativePtr.NULL)
 

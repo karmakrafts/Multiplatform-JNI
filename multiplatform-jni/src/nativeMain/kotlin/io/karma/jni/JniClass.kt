@@ -28,14 +28,16 @@ import kotlinx.cinterop.memScoped
 import kotlinx.cinterop.pointed
 import kotlinx.cinterop.ptr
 
-class JvmClass internal constructor(
+class JvmClass @UnsafeJniApi internal constructor(
     @property:UnsafeJniApi override val handle: JvmClassHandle?
 ) : JvmObject, VisibilityProvider, AnnotationProvider {
     private val fields: ConcurrentMutableMap<FieldDescriptor, JvmField> = ConcurrentMutableMap()
     private val methods: ConcurrentMutableMap<MethodDescriptor, JvmMethod> = ConcurrentMutableMap()
 
     companion object {
+        @property:OptIn(UnsafeJniApi::class)
         val NULL: JvmClass = JvmClass(null)
+
         private val cache: ConcurrentMutableMap<JvmClassHandle, JvmClass> = ConcurrentMutableMap()
 
         @UnsafeJniApi
@@ -47,6 +49,7 @@ class JvmClass internal constructor(
         @UnsafeJniApi
         fun fromUnchecked(obj: JvmObject): JvmClass = fromHandle(obj.handle)
 
+        @OptIn(UnsafeJniApi::class)
         fun findOrNull(env: JniEnvironment, type: Type): JvmClass? {
             val handle = memScoped {
                 env.pointed?.FindClass?.invoke(env.ptr, allocCString(type.jvmName))

@@ -174,7 +174,7 @@ class ArgumentScope(
 class JvmMethod(
     val enclosingClass: JvmClass,
     val descriptor: MethodDescriptor,
-    val id: JvmMethodId,
+    @property:UnsafeJniApi val id: JvmMethodId,
 ) : MethodDescriptor by descriptor, VisibilityProvider, AnnotationProvider {
     @InternalJniApi
     inline fun MemScope.allocArgs(closure: ArgumentScope.() -> Unit): CPointer<JvmValue>? {
