@@ -289,11 +289,11 @@ value class JniScope(val env: JniEnvironment) {
     operator fun JvmByteArray.get(index: Int): Byte = get(env, index)
     operator fun JvmByteArray.set(index: Int, value: Byte) = set(env, index, value)
     fun JvmByteArray.toArray(): ByteArray = toArray(env)
-    fun JvmByteArray.iterator(): ByteIterator = object : ByteIterator() {
-        private var index: Int = 0
-        override fun nextByte(): Byte = get(index++)
-        override fun hasNext(): Boolean = index < length
-    }
+
+    inline val JvmByteArray.iterator: ByteIterator
+        get() = getIterator(env)
+    inline val JvmByteArray.view: JvmByteArrayView
+        get() = getView(env)
 
     @UnsafeJniApi
     fun JvmShortArray.copyDataFrom(from: COpaquePointer, range: IntRange) =
@@ -306,11 +306,11 @@ value class JniScope(val env: JniEnvironment) {
     operator fun JvmShortArray.get(index: Int): Short = get(env, index)
     operator fun JvmShortArray.set(index: Int, value: Short) = set(env, index, value)
     fun JvmShortArray.toArray(): ShortArray = toArray(env)
-    fun JvmShortArray.iterator(): ShortIterator = object : ShortIterator() {
-        private var index: Int = 0
-        override fun nextShort(): Short = get(index++)
-        override fun hasNext(): Boolean = index < length
-    }
+
+    inline val JvmShortArray.iterator: ShortIterator
+        get() = getIterator(env)
+    inline val JvmShortArray.view: JvmShortArrayView
+        get() = getView(env)
 
     @UnsafeJniApi
     fun JvmIntArray.copyDataFrom(from: COpaquePointer, range: IntRange) =
@@ -323,11 +323,11 @@ value class JniScope(val env: JniEnvironment) {
     operator fun JvmIntArray.get(index: Int): Int = get(env, index)
     operator fun JvmIntArray.set(index: Int, value: Int) = set(env, index, value)
     fun JvmIntArray.toArray(): IntArray = toArray(env)
-    fun JvmIntArray.iterator(): IntIterator = object : IntIterator() {
-        private var index: Int = 0
-        override fun nextInt(): Int = get(index++)
-        override fun hasNext(): Boolean = index < length
-    }
+
+    inline val JvmIntArray.iterator: IntIterator
+        get() = getIterator(env)
+    inline val JvmIntArray.view: JvmIntArrayView
+        get() = getView(env)
 
     @UnsafeJniApi
     fun JvmLongArray.copyDataFrom(from: COpaquePointer, range: IntRange) =
@@ -340,11 +340,11 @@ value class JniScope(val env: JniEnvironment) {
     operator fun JvmLongArray.get(index: Int): Long = get(env, index)
     operator fun JvmLongArray.set(index: Int, value: Long) = set(env, index, value)
     fun JvmLongArray.toArray(): LongArray = toArray(env)
-    fun JvmLongArray.iterator(): LongIterator = object : LongIterator() {
-        private var index: Int = 0
-        override fun nextLong(): Long = get(index++)
-        override fun hasNext(): Boolean = index < length
-    }
+
+    inline val JvmLongArray.iterator: LongIterator
+        get() = getIterator(env)
+    inline val JvmLongArray.view: JvmLongArrayView
+        get() = getView(env)
 
     @UnsafeJniApi
     fun JvmFloatArray.copyDataFrom(from: COpaquePointer, range: IntRange) =
@@ -357,11 +357,11 @@ value class JniScope(val env: JniEnvironment) {
     operator fun JvmFloatArray.get(index: Int): Float = get(env, index)
     operator fun JvmFloatArray.set(index: Int, value: Float) = set(env, index, value)
     fun JvmFloatArray.toArray(): FloatArray = toArray(env)
-    fun JvmFloatArray.iterator(): FloatIterator = object : FloatIterator() {
-        private var index: Int = 0
-        override fun nextFloat(): Float = get(index++)
-        override fun hasNext(): Boolean = index < length
-    }
+
+    inline val JvmFloatArray.iterator: FloatIterator
+        get() = getIterator(env)
+    inline val JvmFloatArray.view: JvmFloatArrayView
+        get() = getView(env)
 
     @UnsafeJniApi
     fun JvmDoubleArray.copyDataFrom(from: COpaquePointer, range: IntRange) =
@@ -374,11 +374,11 @@ value class JniScope(val env: JniEnvironment) {
     operator fun JvmDoubleArray.get(index: Int): Double = get(env, index)
     operator fun JvmDoubleArray.set(index: Int, value: Double) = set(env, index, value)
     fun JvmDoubleArray.toArray(): DoubleArray = toArray(env)
-    fun JvmDoubleArray.iterator(): DoubleIterator = object : DoubleIterator() {
-        private var index: Int = 0
-        override fun nextDouble(): Double = get(index++)
-        override fun hasNext(): Boolean = index < length
-    }
+
+    inline val JvmDoubleArray.iterator: DoubleIterator
+        get() = getIterator(env)
+    inline val JvmDoubleArray.view: JvmDoubleArrayView
+        get() = getView(env)
 
     @UnsafeJniApi
     fun JvmBooleanArray.copyDataFrom(from: COpaquePointer, range: IntRange) =
@@ -391,11 +391,11 @@ value class JniScope(val env: JniEnvironment) {
     operator fun JvmBooleanArray.get(index: Int): Boolean = get(env, index)
     operator fun JvmBooleanArray.set(index: Int, value: Boolean) = set(env, index, value)
     fun JvmBooleanArray.toArray(): BooleanArray = toArray(env)
-    fun JvmBooleanArray.iterator(): BooleanIterator = object : BooleanIterator() {
-        private var index: Int = 0
-        override fun nextBoolean(): Boolean = get(index++)
-        override fun hasNext(): Boolean = index < length
-    }
+
+    inline val JvmBooleanArray.iterator: BooleanIterator
+        get() = getIterator(env)
+    inline val JvmBooleanArray.view: JvmBooleanArrayView
+        get() = getView(env)
 
     @UnsafeJniApi
     fun JvmCharArray.copyDataFrom(from: COpaquePointer, range: IntRange) =
@@ -408,20 +408,20 @@ value class JniScope(val env: JniEnvironment) {
     operator fun JvmCharArray.get(index: Int): Char = get(env, index)
     operator fun JvmCharArray.set(index: Int, value: Char) = set(env, index, value)
     fun JvmCharArray.toArray(): CharArray = toArray(env)
-    fun JvmCharArray.iterator(): CharIterator = object : CharIterator() {
-        private var index: Int = 0
-        override fun nextChar(): Char = get(index++)
-        override fun hasNext(): Boolean = index < length
-    }
+
+    inline val JvmCharArray.iterator: CharIterator
+        get() = getIterator(env)
+    inline val JvmCharArray.view: JvmCharArrayView
+        get() = getView(env)
 
     operator fun JvmObjectArray.get(index: Int): JvmObject = get(env, index)
     operator fun JvmObjectArray.set(index: Int, value: JvmObject) = set(env, index, value)
     fun JvmObjectArray.toArray(): Array<JvmObject> = toArray(env)
-    fun JvmObjectArray.iterator(): Iterator<JvmObject> = object : Iterator<JvmObject> {
-        private var index: Int = 0
-        override fun next(): JvmObject = get(index++)
-        override fun hasNext(): Boolean = index < length
-    }
+
+    inline val JvmObjectArray.iterator: Iterator<JvmObject>
+        get() = getIterator(env)
+    inline val JvmObjectArray.view: JvmObjectArrayView
+        get() = getView(env)
 }
 
 @OptIn(UnsafeJniApi::class)

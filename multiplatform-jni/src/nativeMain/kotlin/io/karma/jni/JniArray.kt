@@ -469,6 +469,17 @@ value class JvmByteArray private constructor(
     fun toArray(env: JniEnvironment): ByteArray =
         delegate.toByteArray(env)
 
+    fun getIterator(env: JniEnvironment): ByteIterator = jniScoped(env) {
+        object : ByteIterator() {
+            private val maxLength: Int = getLength(env)
+            private var index: Int = 0
+            override fun nextByte(): Byte = get(index++)
+            override fun hasNext(): Boolean = index < maxLength
+        }
+    }
+
+    fun getView(env: JniEnvironment): JvmByteArrayView = JvmByteArrayView(this, env)
+
     operator fun set(env: JniEnvironment, index: Int, value: Byte) =
         delegate.setByte(env, index, value)
 
@@ -509,6 +520,17 @@ value class JvmShortArray private constructor(
 
     fun toArray(env: JniEnvironment): ShortArray =
         delegate.toShortArray(env)
+
+    fun getIterator(env: JniEnvironment): ShortIterator = jniScoped(env) {
+        object : ShortIterator() {
+            private val maxLength: Int = getLength(env)
+            private var index: Int = 0
+            override fun nextShort(): Short = get(index++)
+            override fun hasNext(): Boolean = index < maxLength
+        }
+    }
+
+    fun getView(env: JniEnvironment): JvmShortArrayView = JvmShortArrayView(this, env)
 
     operator fun set(env: JniEnvironment, index: Int, value: Short) =
         delegate.setShort(env, index, value)
@@ -551,6 +573,17 @@ value class JvmIntArray private constructor(
     fun toArray(env: JniEnvironment): IntArray =
         delegate.toIntArray(env)
 
+    fun getIterator(env: JniEnvironment): IntIterator = jniScoped(env) {
+        object : IntIterator() {
+            private val maxLength: Int = getLength(env)
+            private var index: Int = 0
+            override fun nextInt(): Int = get(index++)
+            override fun hasNext(): Boolean = index < maxLength
+        }
+    }
+
+    fun getView(env: JniEnvironment): JvmIntArrayView = JvmIntArrayView(this, env)
+
     operator fun set(env: JniEnvironment, index: Int, value: Int) =
         delegate.setInt(env, index, value)
 
@@ -591,6 +624,17 @@ value class JvmLongArray private constructor(
 
     fun toArray(env: JniEnvironment): LongArray =
         delegate.toLongArray(env)
+
+    fun getIterator(env: JniEnvironment): LongIterator = jniScoped(env) {
+        object : LongIterator() {
+            private val maxLength: Int = getLength(env)
+            private var index: Int = 0
+            override fun nextLong(): Long = get(index++)
+            override fun hasNext(): Boolean = index < maxLength
+        }
+    }
+
+    fun getView(env: JniEnvironment): JvmLongArrayView = JvmLongArrayView(this, env)
 
     operator fun set(env: JniEnvironment, index: Int, value: Long) =
         delegate.setLong(env, index, value)
@@ -633,6 +677,17 @@ value class JvmFloatArray private constructor(
     fun toArray(env: JniEnvironment): FloatArray =
         delegate.toFloatArray(env)
 
+    fun getIterator(env: JniEnvironment): FloatIterator = jniScoped(env) {
+        object : FloatIterator() {
+            private val maxLength: Int = getLength(env)
+            private var index: Int = 0
+            override fun nextFloat(): Float = get(index++)
+            override fun hasNext(): Boolean = index < maxLength
+        }
+    }
+
+    fun getView(env: JniEnvironment): JvmFloatArrayView = JvmFloatArrayView(this, env)
+
     operator fun set(env: JniEnvironment, index: Int, value: Float) =
         delegate.setFloat(env, index, value)
 
@@ -673,6 +728,17 @@ value class JvmDoubleArray private constructor(
 
     fun toArray(env: JniEnvironment): DoubleArray =
         delegate.toDoubleArray(env)
+
+    fun getIterator(env: JniEnvironment): DoubleIterator = jniScoped(env) {
+        object : DoubleIterator() {
+            private val maxLength: Int = getLength(env)
+            private var index: Int = 0
+            override fun nextDouble(): Double = get(index++)
+            override fun hasNext(): Boolean = index < maxLength
+        }
+    }
+
+    fun getView(env: JniEnvironment): JvmDoubleArrayView = JvmDoubleArrayView(this, env)
 
     operator fun set(env: JniEnvironment, index: Int, value: Double) =
         delegate.setDouble(env, index, value)
@@ -715,6 +781,17 @@ value class JvmBooleanArray private constructor(
     fun toArray(env: JniEnvironment): BooleanArray =
         delegate.toBooleanArray(env)
 
+    fun getIterator(env: JniEnvironment): BooleanIterator = jniScoped(env) {
+        object : BooleanIterator() {
+            private val maxLength: Int = getLength(env)
+            private var index: Int = 0
+            override fun nextBoolean(): Boolean = get(index++)
+            override fun hasNext(): Boolean = index < maxLength
+        }
+    }
+
+    fun getView(env: JniEnvironment): JvmBooleanArrayView = JvmBooleanArrayView(this, env)
+
     operator fun set(env: JniEnvironment, index: Int, value: Boolean) =
         delegate.setBoolean(env, index, value)
 
@@ -756,6 +833,17 @@ value class JvmCharArray private constructor(
     fun toArray(env: JniEnvironment): CharArray =
         delegate.toCharArray(env)
 
+    fun getIterator(env: JniEnvironment): CharIterator = jniScoped(env) {
+        object : CharIterator() {
+            private val maxLength: Int = getLength(env)
+            private var index: Int = 0
+            override fun nextChar(): Char = get(index++)
+            override fun hasNext(): Boolean = index < maxLength
+        }
+    }
+
+    fun getView(env: JniEnvironment): JvmCharArrayView = JvmCharArrayView(this, env)
+
     operator fun set(env: JniEnvironment, index: Int, value: Char) =
         delegate.setChar(env, index, value)
 
@@ -788,6 +876,17 @@ value class JvmObjectArray private constructor(
 
     fun toArray(env: JniEnvironment): Array<JvmObject> =
         delegate.toObjectArray(env)
+
+    fun getIterator(env: JniEnvironment): Iterator<JvmObject> = jniScoped(env) {
+        object : Iterator<JvmObject> {
+            private val maxLength: Int = getLength(env)
+            private var index: Int = 0
+            override fun next(): JvmObject = get(index++)
+            override fun hasNext(): Boolean = index < maxLength
+        }
+    }
+
+    fun getView(env: JniEnvironment): JvmObjectArrayView = JvmObjectArrayView(this, env)
 
     operator fun set(env: JniEnvironment, index: Int, value: JvmObject) =
         delegate.setObject(env, index, value)

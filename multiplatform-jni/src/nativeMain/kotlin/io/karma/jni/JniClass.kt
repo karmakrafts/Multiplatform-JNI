@@ -116,8 +116,8 @@ class JvmClass @UnsafeJniApi internal constructor(
                 returnType = Type.CLASS.array()
                 callType = CallType.DIRECT
             }.callObject(method)
-                .uncheckedCast<JvmGenericArray>()
-                .toObjectArray()
+                .uncheckedCast<JvmObjectArray>()
+                .view
                 .map { it.uncheckedCast<JvmClass>().type }
 
             callType = methodClass.findMethod {
@@ -259,8 +259,8 @@ class JvmClass @UnsafeJniApi internal constructor(
             returnType = Type.FIELD.array()
             callType = CallType.DIRECT
         }.callObject(this@JvmClass)
-            .uncheckedCast<JvmGenericArray>()
-            .toObjectArray()
+            .uncheckedCast<JvmObjectArray>()
+            .view
             .map { unreflectField(it) }
     }
 
@@ -271,8 +271,8 @@ class JvmClass @UnsafeJniApi internal constructor(
             returnType = Type.METHOD.array()
             callType = CallType.DIRECT
         }.callObject(this@JvmClass)
-            .uncheckedCast<JvmGenericArray>()
-            .toObjectArray()
+            .uncheckedCast<JvmObjectArray>()
+            .view
             .map { unreflectMethod(it) }
     }
 
