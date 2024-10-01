@@ -14,9 +14,6 @@
  * limitations under the License.
  */
 
-import org.jetbrains.kotlin.konan.target.KonanTarget
-import kotlin.io.path.div
-
 plugins {
     alias(libs.plugins.kotlin.multiplatform)
     alias(libs.plugins.dokka)
@@ -31,61 +28,29 @@ java {
     targetCompatibility = JavaVersion.VERSION_17
 }
 
-val jniFiles = projectDir.toPath() / "jni"
-
 kotlin {
     jvm()
     mingwX64 {
-        val jniHome = jniFiles / "windows-x64"
-        compilations["main"].cinterops {
-            val jni by creating {
-                compilerOpts("-I${jniHome / "include"}", "-I${jniHome / "include" / "win32"}")
-                headers("${jniHome / "include" / "jni.h"}")
-            }
-        }
-        binaries {
-            sharedLib {
-                linkerOpts(
-                    "-L${jniHome / "lib"}",
-                    "-ljawt",
-                    "-ljvm"
-                )
+        compilations.configureEach {
+            cinterops {
+                val jni by creating
             }
         }
     }
     listOf(linuxX64(), linuxArm64()).forEach { target ->
-        val platformPair = when (target.konanTarget) {
-            KonanTarget.LINUX_X64 -> "linux-x64"
-            KonanTarget.LINUX_ARM64 -> "linux-arm64"
-            else -> throw IllegalStateException("Unsupported target platform")
-        }
-        val jniHome = jniFiles / platformPair
         target.apply {
-            compilations["main"].cinterops {
-                val jni by creating {
-                    compilerOpts("-I${jniHome / "include"}", "-I${jniHome / "include" / "linux"}")
-                    headers("${jniHome / "include" / "jni.h"}")
+            compilations.configureEach {
+                cinterops {
+                    val jni by creating
                 }
             }
         }
     }
     listOf(macosX64(), macosArm64()).forEach { target ->
-        val platformPair = when (target.konanTarget) {
-            KonanTarget.MACOS_X64 -> "macos-x64"
-            KonanTarget.MACOS_ARM64 -> "macos-arm64"
-            else -> throw IllegalStateException("Unsupported target platform")
-        }
-        val jniHome = jniFiles / platformPair
         target.apply {
-            compilations["main"].cinterops {
-                val jni by creating {
-                    compilerOpts("-I${jniHome / "include"}", "-I${jniHome / "include" / "darwin"}")
-                    headers("${jniHome / "include" / "jni.h"}")
-                }
-            }
-            binaries {
-                framework {
-                    baseName = "MultiplatformJNI"
+            compilations.configureEach {
+                cinterops {
+                    val jni by creating
                 }
             }
         }

@@ -1,1 +1,9 @@
 package = jni
+headers = jni.h
+
+libraryPaths.mingw = jni/windows/lib
+staticLibraries.mingw = jvm.lib jawt.lib
+
+compilerOpts.mingw = -Ijni/windows/include
+compilerOpts.linux = -Ijni/linux/include
+compilerOpts.osx = -Ijni/macos/include
