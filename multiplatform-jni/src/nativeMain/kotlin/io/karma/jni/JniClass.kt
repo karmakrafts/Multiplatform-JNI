@@ -73,13 +73,13 @@ class JvmClass @UnsafeJniApi internal constructor(
                 name = "getName"
                 returnType = Type.STRING
                 callType = CallType.DIRECT
-            }.callObject(field).uncheckedCast<JvmString>().value) { "Field name must not be null" }
+            }.callObject<JvmString>(field).value) { "Field name must not be null" }
 
             type = fieldClass.findMethod {
                 name = "getType"
                 returnType = Type.CLASS
                 callType = CallType.DIRECT
-            }.callObject(field).uncheckedCast<JvmClass>().type
+            }.callObject<JvmClass>(field).type
 
             isStatic = fieldClass.findMethod {
                 name = "getModifiers"
@@ -103,20 +103,19 @@ class JvmClass @UnsafeJniApi internal constructor(
                 name = "getName"
                 returnType = Type.STRING
                 callType = CallType.DIRECT
-            }.callObject(method).uncheckedCast<JvmString>().value) { "Field name must not be null" }
+            }.callObject<JvmString>(method).value) { "Field name must not be null" }
 
             returnType = methodClass.findMethod {
                 name = "getReturnType"
                 returnType = Type.CLASS
                 callType = CallType.DIRECT
-            }.callObject(method).uncheckedCast<JvmClass>().type
+            }.callObject<JvmClass>(method).type
 
             parameterTypes += methodClass.findMethod {
                 name = "getParameterTypes"
                 returnType = Type.CLASS.array()
                 callType = CallType.DIRECT
-            }.callObject(method)
-                .uncheckedCast<JvmObjectArray>()
+            }.callObject<JvmObjectArray>(method)
                 .view
                 .map { it.uncheckedCast<JvmClass>().type }
 
@@ -209,8 +208,7 @@ class JvmClass @UnsafeJniApi internal constructor(
             name = "getName"
             returnType = Type.STRING
             callType = CallType.DIRECT
-        }.callObject(this@JvmClass)
-            .uncheckedCast<JvmString>()
+        }.callObject<JvmString>(this@JvmClass)
             .value
             ?.let(Type::get)
             ?: NullType
@@ -252,36 +250,31 @@ class JvmClass @UnsafeJniApi internal constructor(
         }
     }
 
-    @OptIn(UnsafeJniApi::class)
     fun getFields(env: JniEnvironment): List<JvmField> = jniScoped(env) {
         findMethod {
             name = "getDeclaredFields"
             returnType = Type.FIELD.array()
             callType = CallType.DIRECT
-        }.callObject(this@JvmClass)
-            .uncheckedCast<JvmObjectArray>()
+        }.callObject<JvmObjectArray>(this@JvmClass)
             .view
             .map { unreflectField(it) }
     }
 
-    @OptIn(UnsafeJniApi::class)
     fun getMethods(env: JniEnvironment): List<JvmMethod> = jniScoped(env) {
         findMethod {
             name = "getDeclaredMethods"
             returnType = Type.METHOD.array()
             callType = CallType.DIRECT
-        }.callObject(this@JvmClass)
-            .uncheckedCast<JvmObjectArray>()
+        }.callObject<JvmObjectArray>(this@JvmClass)
             .view
             .map { unreflectMethod(it) }
     }
 
-    @OptIn(UnsafeJniApi::class)
     fun getComponentTypeClass(env: JniEnvironment): JvmClass = jniScoped(env) {
         findMethod {
             name = "getComponentType"
             returnType = Type.CLASS
-        }.callObject().uncheckedCast()
+        }.callObject<JvmClass>()
     }
 
     @OptIn(UnsafeJniApi::class)

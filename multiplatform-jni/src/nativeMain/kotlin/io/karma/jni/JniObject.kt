@@ -120,13 +120,11 @@ interface JvmObject {
     fun isInstance(env: JniEnvironment, clazz: JvmClass): Boolean =
         isInstance(env, clazz.getType(env))
 
-    @OptIn(UnsafeJniApi::class)
     fun toKString(env: JniEnvironment): String = jniScoped(env) {
         typeClass.findMethod {
             name = "toString"
             returnType = Type.STRING
-        }.callObject(this@JvmObject)
-            .uncheckedCast<JvmString>()
+        }.callObject<JvmString>(this@JvmObject)
             .value ?: "null"
     }
 }

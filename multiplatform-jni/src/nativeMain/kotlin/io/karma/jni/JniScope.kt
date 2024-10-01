@@ -152,6 +152,11 @@ value class JniScope(val env: JniEnvironment) {
         closure: ArgumentScope.() -> Unit = {}
     ): JvmObject = callObject(env, instance, closure)
 
+    inline fun <reified R : JvmObject> JvmMethod.callObject(
+        instance: JvmObject = JvmObject.NULL,
+        closure: ArgumentScope.() -> Unit = {}
+    ): R = callObject<R>(env, instance, closure)
+
     inline fun <reified R> JvmMethod.call(
         instance: JvmObject = JvmObject.NULL,
         closure: ArgumentScope.() -> Unit = {}
