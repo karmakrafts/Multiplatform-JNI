@@ -29,6 +29,9 @@ import kotlinx.cinterop.CVariable
 import kotlinx.cinterop.ExperimentalForeignApi
 
 value class JniScope(val env: JniEnvironment) {
+    inline val runtime: JvmRuntime?
+        get() = JvmRuntime.get(env)
+
     fun jstring.toKString(): String = toKString(env)
     fun String.toJString(): jstring = toJString(env)
 

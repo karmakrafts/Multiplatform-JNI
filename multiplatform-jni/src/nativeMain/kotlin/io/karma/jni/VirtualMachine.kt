@@ -101,7 +101,7 @@ value class VirtualMachine private constructor(
     }
 
     @OptIn(UnsafeJniApi::class)
-    val environment: JniEnvironment?
+    inline val environment: JniEnvironment?
         get() = memScoped {
             val address = allocPointerTo<JniEnvironment>()
             handle?.pointed?.GetEnv?.invoke(handle.ptr, interpretCPointer(address.rawPtr), 0)
