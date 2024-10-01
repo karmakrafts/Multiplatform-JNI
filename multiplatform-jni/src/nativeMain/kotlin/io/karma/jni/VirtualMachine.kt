@@ -19,20 +19,25 @@
 package io.karma.jni
 
 import jni.JNI_CreateJavaVM
+import jni.JNI_GetCreatedJavaVMs
 import jni.JNI_VERSION_1_8
 import jni.JavaVMInitArgs
+import jni.jsizeVar
 import kotlinx.cinterop.CFunction
 import kotlinx.cinterop.COpaquePointer
 import kotlinx.cinterop.CPointer
+import kotlinx.cinterop.CPointerVar
 import kotlinx.cinterop.ExperimentalForeignApi
 import kotlinx.cinterop.alloc
 import kotlinx.cinterop.allocArray
 import kotlinx.cinterop.allocPointerTo
+import kotlinx.cinterop.get
 import kotlinx.cinterop.interpretCPointer
 import kotlinx.cinterop.invoke
 import kotlinx.cinterop.memScoped
 import kotlinx.cinterop.pointed
 import kotlinx.cinterop.ptr
+import kotlinx.cinterop.value
 
 class VmArgument(
     val value: String,
@@ -68,7 +73,7 @@ value class VirtualMachine private constructor(
         inline fun create(closure: VmArgsBuilder.() -> Unit): VirtualMachine = memScoped {
             val builder = VmArgsBuilder().apply(closure)
             val vmAdress = allocPointerTo<VmHandle>()
-            JNI_CreateJavaVM(vmAdress.ptr, null, alloc<JavaVMInitArgs> {
+            val result = JNI_CreateJavaVM(vmAdress.ptr, null, alloc<JavaVMInitArgs> {
                 version = JNI_VERSION_1_8
                 nOptions = builder.options.size
                 options = allocArray(nOptions) { index ->
@@ -79,7 +84,19 @@ value class VirtualMachine private constructor(
                 }
                 ignoreUnrecognized = builder.ignoreUnrecognized.toJBoolean()
             }.ptr)
+            if (result != JNI_OK) NULL
             fromHandle(vmAdress.pointed)
+        }
+
+        @OptIn(UnsafeJniApi::class)
+        fun list(): Array<VirtualMachine> = memScoped {
+            val firstVm = allocPointerTo<VmHandle>()
+            val numVms = alloc<jsizeVar>()
+            if (JNI_GetCreatedJavaVMs(firstVm.ptr, 1, numVms.ptr) != JNI_OK) return emptyArray()
+            if (numVms.value == 1) return arrayOf(fromHandle(firstVm.pointed))
+            val otherVms = allocArray<CPointerVar<VmHandle>>(numVms.value)
+            if (JNI_GetCreatedJavaVMs(otherVms, numVms.value, null) != JNI_OK) return emptyArray()
+            Array(numVms.value) { fromHandle(otherVms[it]?.pointed) }
         }
     }
 

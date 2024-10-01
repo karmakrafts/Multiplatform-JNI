@@ -1,5 +1,5 @@
 [versions]
-multiplatformJni = "1.6.0"
+multiplatformJni = "1.7.0"
 kotlin = "2.0.10"
 stately = "2.1.0"
 
