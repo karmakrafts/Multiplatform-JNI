@@ -42,7 +42,7 @@ value class JvmRuntime @UnsafeJniApi private constructor(
         }.callInt(this@JvmRuntime)
     }
 
-    fun getTotalMemory(env: JniEnvironment): Int = jniScoped {
+    fun getTotalMemory(env: JniEnvironment): Int = jniScoped(env) {
         JvmClass.find(Type.get("java.lang.Runtime")).findMethod {
             name = "totalMemory"
             returnType = PrimitiveType.INT
@@ -50,7 +50,7 @@ value class JvmRuntime @UnsafeJniApi private constructor(
         }.callInt(this@JvmRuntime)
     }
 
-    fun getMaxMemory(env: JniEnvironment): Int = jniScoped {
+    fun getMaxMemory(env: JniEnvironment): Int = jniScoped(env) {
         JvmClass.find(Type.get("java.lang.Runtime")).findMethod {
             name = "maxMemory"
             returnType = PrimitiveType.INT
