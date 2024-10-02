@@ -425,9 +425,13 @@ value class JvmGenericArray @UnsafeJniApi private constructor(
         BooleanArray(length) { getBoolean(it) }
     }
 
-    @OptIn(ExperimentalNativeApi::class)
+    @OptIn(UnsafeJniApi::class)
     fun toCharArray(env: JniEnvironment): CharArray = jniScoped(env) {
-        CharArray(length) { Char.toChars(getShort(it).toInt())[0] }
+        CharArray(length).apply {
+            usePinned { pinnedArray ->
+                copyPrimitiveDataTo<jcharVar>(pinnedArray.addressOf(0), indices)
+            }
+        }
     }
 
     fun toObjectArray(env: JniEnvironment): Array<JvmObject> = jniScoped(env) {
