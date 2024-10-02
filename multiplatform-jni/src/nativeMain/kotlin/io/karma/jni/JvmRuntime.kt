@@ -25,12 +25,50 @@ value class JvmRuntime @UnsafeJniApi private constructor(
 ) : JvmObject {
     companion object {
         @OptIn(UnsafeJniApi::class)
-        fun get(env: JniEnvironment): JvmRuntime? = jniScoped(env) {
+        fun get(env: JniEnvironment): JvmRuntime = jniScoped(env) {
             JvmClass.find(Type.get("java.lang.Runtime")).findMethod {
                 name = "getRuntime"
                 returnType = Type.get("java.lang.Runtime")
                 callType = CallType.STATIC
-            }.callObject().handle?.let(::JvmRuntime)
+            }.callObject().handle.let { JvmRuntime(requireNotNull(it)) }
         }
+    }
+
+    fun getAvailableProcessors(env: JniEnvironment): Int = jniScoped(env) {
+        JvmClass.find(Type.get("java.lang.Runtime")).findMethod {
+            name = "availableProcessors"
+            returnType = PrimitiveType.INT
+            callType = CallType.DIRECT
+        }.callInt(this@JvmRuntime)
+    }
+
+    fun getTotalMemory(env: JniEnvironment): Int = jniScoped {
+        JvmClass.find(Type.get("java.lang.Runtime")).findMethod {
+            name = "totalMemory"
+            returnType = PrimitiveType.INT
+            callType = CallType.DIRECT
+        }.callInt(this@JvmRuntime)
+    }
+
+    fun getMaxMemory(env: JniEnvironment): Int = jniScoped {
+        JvmClass.find(Type.get("java.lang.Runtime")).findMethod {
+            name = "maxMemory"
+            returnType = PrimitiveType.INT
+            callType = CallType.DIRECT
+        }.callInt(this@JvmRuntime)
+    }
+
+    fun freeMemory(env: JniEnvironment) = jniScoped(env) {
+        JvmClass.find(Type.get("java.lang.Runtime")).findMethod {
+            this.name = "freeMemory"
+            callType = CallType.DIRECT
+        }.callVoid(this@JvmRuntime)
+    }
+
+    fun gc(env: JniEnvironment) = jniScoped(env) {
+        JvmClass.find(Type.get("java.lang.Runtime")).findMethod {
+            this.name = "gc"
+            callType = CallType.DIRECT
+        }.callVoid(this@JvmRuntime)
     }
 }

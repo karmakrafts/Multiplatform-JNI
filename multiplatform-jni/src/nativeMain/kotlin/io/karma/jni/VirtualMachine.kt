@@ -101,12 +101,14 @@ value class VirtualMachine private constructor(
     }
 
     @OptIn(UnsafeJniApi::class)
-    inline val environment: JniEnvironment?
+    inline val environment: JniEnvironment
         get() = memScoped {
             val address = allocPointerTo<JniEnvironment>()
             handle?.pointed?.GetEnv?.invoke(handle.ptr, interpretCPointer(address.rawPtr), 0)
-            address.pointed
+            requireNotNull(address.pointed) { "Could not retrieve environment" }
         }
+
+    inline fun <reified R> use(closure: JniScope.() -> R): R = jniScoped(environment, closure)
 
     @OptIn(UnsafeJniApi::class)
     fun destroy() {

@@ -187,24 +187,41 @@ class JvmMethod(
     }
 
     @OptIn(UnsafeJniApi::class, InternalJniApi::class)
+    inline fun callVoid(
+        env: JniEnvironment,
+        instance: JvmObject = JvmObject.NULL,
+        args: ArgumentScope.() -> Unit = {}
+    ) = memScoped {
+        when (descriptor.callType) { // @formatter:off
+            CallType.STATIC -> env.pointed?.CallStaticVoidMethodA?.invoke(
+                env.ptr, enclosingClass.handle, id, allocArgs(args)
+            )
+            CallType.VIRTUAL -> env.pointed?.CallVoidMethodA?.invoke(
+                env.ptr, instance.handle, id, allocArgs(args)
+            )
+            CallType.DIRECT -> env.pointed?.CallNonvirtualVoidMethodA?.invoke(
+                env.ptr, instance.handle, enclosingClass.handle, id, allocArgs(args)
+            )
+        } ?: 0 // @formatter:on
+    }
+
+    @OptIn(UnsafeJniApi::class, InternalJniApi::class)
     inline fun callByte(
         env: JniEnvironment,
         instance: JvmObject = JvmObject.NULL,
         args: ArgumentScope.() -> Unit = {}
-    ): Byte {
-        return memScoped {
-            when (descriptor.callType) { // @formatter:off
-                CallType.STATIC -> env.pointed?.CallStaticByteMethodA?.invoke(
-                    env.ptr, enclosingClass.handle, id, allocArgs(args)
-                )
-                CallType.VIRTUAL -> env.pointed?.CallByteMethodA?.invoke(
-                    env.ptr, instance.handle, id, allocArgs(args)
-                )
-                CallType.DIRECT -> env.pointed?.CallNonvirtualByteMethodA?.invoke(
-                    env.ptr, instance.handle, enclosingClass.handle, id, allocArgs(args)
-                )
-            } ?: 0 // @formatter:on
-        }
+    ): Byte = memScoped {
+        when (descriptor.callType) { // @formatter:off
+            CallType.STATIC -> env.pointed?.CallStaticByteMethodA?.invoke(
+                env.ptr, enclosingClass.handle, id, allocArgs(args)
+            )
+            CallType.VIRTUAL -> env.pointed?.CallByteMethodA?.invoke(
+                env.ptr, instance.handle, id, allocArgs(args)
+            )
+            CallType.DIRECT -> env.pointed?.CallNonvirtualByteMethodA?.invoke(
+                env.ptr, instance.handle, enclosingClass.handle, id, allocArgs(args)
+            )
+        } ?: 0 // @formatter:on
     }
 
     @OptIn(UnsafeJniApi::class, InternalJniApi::class)
@@ -212,20 +229,18 @@ class JvmMethod(
         env: JniEnvironment,
         instance: JvmObject = JvmObject.NULL,
         args: ArgumentScope.() -> Unit = {}
-    ): Short {
-        return memScoped {
-            when (descriptor.callType) { // @formatter:off
-                CallType.STATIC -> env.pointed?.CallStaticShortMethodA?.invoke(
-                    env.ptr, enclosingClass.handle, id, allocArgs(args)
-                )
-                CallType.VIRTUAL -> env.pointed?.CallShortMethodA?.invoke(
-                    env.ptr, instance.handle, id, allocArgs(args)
-                )
-                CallType.DIRECT -> env.pointed?.CallNonvirtualShortMethodA?.invoke(
-                    env.ptr, instance.handle, enclosingClass.handle, id, allocArgs(args)
-                )
-            } ?: 0 // @formatter:on
-        }
+    ): Short = memScoped {
+        when (descriptor.callType) { // @formatter:off
+            CallType.STATIC -> env.pointed?.CallStaticShortMethodA?.invoke(
+                env.ptr, enclosingClass.handle, id, allocArgs(args)
+            )
+            CallType.VIRTUAL -> env.pointed?.CallShortMethodA?.invoke(
+                env.ptr, instance.handle, id, allocArgs(args)
+            )
+            CallType.DIRECT -> env.pointed?.CallNonvirtualShortMethodA?.invoke(
+                env.ptr, instance.handle, enclosingClass.handle, id, allocArgs(args)
+            )
+        } ?: 0 // @formatter:on
     }
 
     @OptIn(InternalJniApi::class, UnsafeJniApi::class)
@@ -233,20 +248,18 @@ class JvmMethod(
         env: JniEnvironment,
         instance: JvmObject = JvmObject.NULL,
         args: ArgumentScope.() -> Unit = {}
-    ): Int {
-        return memScoped {
-            when (descriptor.callType) { // @formatter:off
-                CallType.STATIC -> env.pointed?.CallStaticIntMethodA?.invoke(
-                    env.ptr, enclosingClass.handle, id, allocArgs(args)
-                )
-                CallType.VIRTUAL -> env.pointed?.CallIntMethodA?.invoke(
-                    env.ptr, instance.handle, id, allocArgs(args)
-                )
-                CallType.DIRECT -> env.pointed?.CallNonvirtualIntMethodA?.invoke(
-                    env.ptr, instance.handle, enclosingClass.handle, id, allocArgs(args)
-                )
-            } ?: 0 // @formatter:on
-        }
+    ): Int = memScoped {
+        when (descriptor.callType) { // @formatter:off
+            CallType.STATIC -> env.pointed?.CallStaticIntMethodA?.invoke(
+                env.ptr, enclosingClass.handle, id, allocArgs(args)
+            )
+            CallType.VIRTUAL -> env.pointed?.CallIntMethodA?.invoke(
+                env.ptr, instance.handle, id, allocArgs(args)
+            )
+            CallType.DIRECT -> env.pointed?.CallNonvirtualIntMethodA?.invoke(
+                env.ptr, instance.handle, enclosingClass.handle, id, allocArgs(args)
+            )
+        } ?: 0 // @formatter:on
     }
 
     @OptIn(UnsafeJniApi::class, InternalJniApi::class)
@@ -254,20 +267,18 @@ class JvmMethod(
         env: JniEnvironment,
         instance: JvmObject = JvmObject.NULL,
         args: ArgumentScope.() -> Unit = {}
-    ): Long {
-        return memScoped {
-            when (descriptor.callType) { // @formatter:off
-                CallType.STATIC -> env.pointed?.CallStaticLongMethodA?.invoke(
-                    env.ptr, enclosingClass.handle, id, allocArgs(args)
-                )
-                CallType.VIRTUAL -> env.pointed?.CallLongMethodA?.invoke(
-                    env.ptr, instance.handle, id, allocArgs(args)
-                )
-                CallType.DIRECT -> env.pointed?.CallNonvirtualLongMethodA?.invoke(
-                    env.ptr, instance.handle, enclosingClass.handle, id, allocArgs(args)
-                )
-            } ?: 0 // @formatter:on
-        }
+    ): Long = memScoped {
+        when (descriptor.callType) { // @formatter:off
+            CallType.STATIC -> env.pointed?.CallStaticLongMethodA?.invoke(
+                env.ptr, enclosingClass.handle, id, allocArgs(args)
+            )
+            CallType.VIRTUAL -> env.pointed?.CallLongMethodA?.invoke(
+                env.ptr, instance.handle, id, allocArgs(args)
+            )
+            CallType.DIRECT -> env.pointed?.CallNonvirtualLongMethodA?.invoke(
+                env.ptr, instance.handle, enclosingClass.handle, id, allocArgs(args)
+            )
+        } ?: 0 // @formatter:on
     }
 
     @OptIn(UnsafeJniApi::class, InternalJniApi::class)
@@ -275,20 +286,18 @@ class JvmMethod(
         env: JniEnvironment,
         instance: JvmObject = JvmObject.NULL,
         args: ArgumentScope.() -> Unit = {}
-    ): Float {
-        return memScoped {
-            when (descriptor.callType) { // @formatter:off
-                CallType.STATIC -> env.pointed?.CallStaticFloatMethodA?.invoke(
-                    env.ptr, enclosingClass.handle, id, allocArgs(args)
-                )
-                CallType.VIRTUAL -> env.pointed?.CallFloatMethodA?.invoke(
-                    env.ptr, instance.handle, id, allocArgs(args)
-                )
-                CallType.DIRECT -> env.pointed?.CallNonvirtualFloatMethodA?.invoke(
-                    env.ptr, instance.handle, enclosingClass.handle, id, allocArgs(args)
-                )
-            } ?: 0F // @formatter:on
-        }
+    ): Float = memScoped {
+        when (descriptor.callType) { // @formatter:off
+            CallType.STATIC -> env.pointed?.CallStaticFloatMethodA?.invoke(
+                env.ptr, enclosingClass.handle, id, allocArgs(args)
+            )
+            CallType.VIRTUAL -> env.pointed?.CallFloatMethodA?.invoke(
+                env.ptr, instance.handle, id, allocArgs(args)
+            )
+            CallType.DIRECT -> env.pointed?.CallNonvirtualFloatMethodA?.invoke(
+                env.ptr, instance.handle, enclosingClass.handle, id, allocArgs(args)
+            )
+        } ?: 0F // @formatter:on
     }
 
     @OptIn(InternalJniApi::class, UnsafeJniApi::class)
@@ -296,20 +305,18 @@ class JvmMethod(
         env: JniEnvironment,
         instance: JvmObject = JvmObject.NULL,
         args: ArgumentScope.() -> Unit = {}
-    ): Double {
-        return memScoped {
-            when (descriptor.callType) { // @formatter:off
-                CallType.STATIC -> env.pointed?.CallStaticDoubleMethodA?.invoke(
-                    env.ptr, enclosingClass.handle, id, allocArgs(args)
-                )
-                CallType.VIRTUAL -> env.pointed?.CallDoubleMethodA?.invoke(
-                    env.ptr, instance.handle, id, allocArgs(args)
-                )
-                CallType.DIRECT -> env.pointed?.CallNonvirtualDoubleMethodA?.invoke(
-                    env.ptr, instance.handle, enclosingClass.handle, id, allocArgs(args)
-                )
-            } ?: 0.0 // @formatter:on
-        }
+    ): Double = memScoped {
+        when (descriptor.callType) { // @formatter:off
+            CallType.STATIC -> env.pointed?.CallStaticDoubleMethodA?.invoke(
+                env.ptr, enclosingClass.handle, id, allocArgs(args)
+            )
+            CallType.VIRTUAL -> env.pointed?.CallDoubleMethodA?.invoke(
+                env.ptr, instance.handle, id, allocArgs(args)
+            )
+            CallType.DIRECT -> env.pointed?.CallNonvirtualDoubleMethodA?.invoke(
+                env.ptr, instance.handle, enclosingClass.handle, id, allocArgs(args)
+            )
+        } ?: 0.0 // @formatter:on
     }
 
     @OptIn(UnsafeJniApi::class, InternalJniApi::class)
@@ -317,20 +324,18 @@ class JvmMethod(
         env: JniEnvironment,
         instance: JvmObject = JvmObject.NULL,
         args: ArgumentScope.() -> Unit = {}
-    ): Boolean {
-        return memScoped {
-            when (descriptor.callType) { // @formatter:off
-                CallType.STATIC -> env.pointed?.CallStaticBooleanMethodA?.invoke(
-                    env.ptr, enclosingClass.handle, id, allocArgs(args)
-                )
-                CallType.VIRTUAL -> env.pointed?.CallBooleanMethodA?.invoke(
-                    env.ptr, instance.handle, id, allocArgs(args)
-                )
-                CallType.DIRECT -> env.pointed?.CallNonvirtualBooleanMethodA?.invoke(
-                    env.ptr, instance.handle, enclosingClass.handle, id, allocArgs(args)
-                )
-            }?.toKBoolean() ?: false // @formatter:on
-        }
+    ): Boolean = memScoped {
+        when (descriptor.callType) { // @formatter:off
+            CallType.STATIC -> env.pointed?.CallStaticBooleanMethodA?.invoke(
+                env.ptr, enclosingClass.handle, id, allocArgs(args)
+            )
+            CallType.VIRTUAL -> env.pointed?.CallBooleanMethodA?.invoke(
+                env.ptr, instance.handle, id, allocArgs(args)
+            )
+            CallType.DIRECT -> env.pointed?.CallNonvirtualBooleanMethodA?.invoke(
+                env.ptr, instance.handle, enclosingClass.handle, id, allocArgs(args)
+            )
+        }?.toKBoolean() ?: false // @formatter:on
     }
 
     @OptIn(ExperimentalNativeApi::class, UnsafeJniApi::class, InternalJniApi::class)
@@ -338,22 +343,20 @@ class JvmMethod(
         env: JniEnvironment,
         instance: JvmObject = JvmObject.NULL,
         args: ArgumentScope.() -> Unit = {}
-    ): Char {
-        return memScoped {
-            // @formatter:off
-            Char.toChars(when (descriptor.callType) {
-                CallType.STATIC -> env.pointed?.CallStaticCharMethodA?.invoke(
-                    env.ptr, enclosingClass.handle, id, allocArgs(args)
-                )
-                CallType.VIRTUAL -> env.pointed?.CallCharMethodA?.invoke(
-                    env.ptr, instance.handle, id, allocArgs(args)
-                )
-                CallType.DIRECT -> env.pointed?.CallNonvirtualCharMethodA?.invoke(
-                    env.ptr, instance.handle, enclosingClass.handle, id, allocArgs(args)
-                )
-            }?.toInt() ?: 0)[0]
-            // @formatter:on
-        }
+    ): Char = memScoped {
+        // @formatter:off
+        Char.toChars(when (descriptor.callType) {
+            CallType.STATIC -> env.pointed?.CallStaticCharMethodA?.invoke(
+                env.ptr, enclosingClass.handle, id, allocArgs(args)
+            )
+            CallType.VIRTUAL -> env.pointed?.CallCharMethodA?.invoke(
+                env.ptr, instance.handle, id, allocArgs(args)
+            )
+            CallType.DIRECT -> env.pointed?.CallNonvirtualCharMethodA?.invoke(
+                env.ptr, instance.handle, enclosingClass.handle, id, allocArgs(args)
+            )
+        }?.toInt() ?: 0)[0]
+        // @formatter:on
     }
 
     @OptIn(UnsafeJniApi::class, InternalJniApi::class)
@@ -361,21 +364,20 @@ class JvmMethod(
         env: JniEnvironment,
         instance: JvmObject = JvmObject.NULL,
         args: ArgumentScope.() -> Unit = {}
-    ): JvmObject {
-        return memScoped {
-            JvmObject.fromHandle(when (descriptor.callType) { // @formatter:off
-                CallType.STATIC -> env.pointed?.CallStaticObjectMethodA?.invoke(
-                    env.ptr, enclosingClass.handle, id, allocArgs(args)
-                )
-                CallType.VIRTUAL -> env.pointed?.CallObjectMethodA?.invoke(
-                    env.ptr, instance.handle, id, allocArgs(args)
-                )
-                CallType.DIRECT -> env.pointed?.CallNonvirtualObjectMethodA?.invoke(
-                    env.ptr, instance.handle, enclosingClass.handle, id, allocArgs(args)
-                )
-            }
-            ) // @formatter:on
-        }
+    ): JvmObject = memScoped {
+        // @formatter:off
+        JvmObject.fromHandle(when (descriptor.callType) {
+            CallType.STATIC -> env.pointed?.CallStaticObjectMethodA?.invoke(
+                env.ptr, enclosingClass.handle, id, allocArgs(args)
+            )
+            CallType.VIRTUAL -> env.pointed?.CallObjectMethodA?.invoke(
+                env.ptr, instance.handle, id, allocArgs(args)
+            )
+            CallType.DIRECT -> env.pointed?.CallNonvirtualObjectMethodA?.invoke(
+                env.ptr, instance.handle, enclosingClass.handle, id, allocArgs(args)
+            )
+        })
+        // @formatter:on
     }
 
     @OptIn(UnsafeJniApi::class)
@@ -386,13 +388,13 @@ class JvmMethod(
     ): R = callObject(env, instance, args).uncheckedCast<R>()
 
     @OptIn(UnsafeJniApi::class)
-    @Suppress("IMPLICIT_CAST_TO_ANY")
     inline fun <reified R> call(
         env: JniEnvironment,
         instance: JvmObject = JvmObject.NULL,
         closure: ArgumentScope.() -> Unit = {}
     ): R {
         return when (R::class) {
+            Unit::class -> callVoid(env, instance, closure)
             Byte::class -> callByte(env, instance, closure)
             Short::class -> callShort(env, instance, closure)
             Int::class -> callInt(env, instance, closure)

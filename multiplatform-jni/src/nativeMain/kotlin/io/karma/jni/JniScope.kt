@@ -29,9 +29,6 @@ import kotlinx.cinterop.CVariable
 import kotlinx.cinterop.ExperimentalForeignApi
 
 value class JniScope(val env: JniEnvironment) {
-    inline val runtime: JvmRuntime?
-        get() = JvmRuntime.get(env)
-
     fun jstring.toKString(): String = toKString(env)
     fun String.toJString(): jstring = toJString(env)
 
@@ -109,6 +106,11 @@ value class JniScope(val env: JniEnvironment) {
 
     val JvmField.instance: JvmObject
         get() = getInstance(env)
+
+    fun JvmMethod.callVoid(
+        instance: JvmObject = JvmObject.NULL,
+        closure: ArgumentScope.() -> Unit = {}
+    ) = callVoid(env, instance, closure)
 
     fun JvmMethod.callByte(
         instance: JvmObject = JvmObject.NULL,
@@ -430,6 +432,18 @@ value class JniScope(val env: JniEnvironment) {
         get() = getIterator(env)
     inline val JvmObjectArray.view: JvmObjectArrayView
         get() = getView(env)
+
+    inline val runtime: JvmRuntime
+        get() = JvmRuntime.get(env)
+    inline val JvmRuntime.availableProcessors: Int
+        get() = getAvailableProcessors(env)
+    inline val JvmRuntime.totalMemory: Int
+        get() = getTotalMemory(env)
+    inline val JvmRuntime.maxMemory: Int
+        get() = getMaxMemory(env)
+
+    fun JvmRuntime.freeMemory() = freeMemory(env)
+    fun JvmRuntime.gc() = gc(env)
 }
 
 @OptIn(UnsafeJniApi::class)
